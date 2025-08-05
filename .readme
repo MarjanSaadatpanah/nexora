@@ -1,0 +1,32 @@
+backend/
+├── app/
+│   ├── __init__.py             # App factory
+│   ├── config.py               # Config class (DB URI, etc.)
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── project.py
+│   │   ├── organization.py
+│   │   └── project_organization.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── projects.py
+│   │   └── organizations.py
+│   └── extensions.py           # db = SQLAlchemy()
+├── run.py                      # Entry point
+└── requirements.txt
+
+frontend/src
+    App
+    ├── HeroSection
+    ├── CategoryBar
+    ├── SearchAndFilter
+    │    ├── SearchBox
+    │    └── FilterPanel (modal or drawer)
+    ├── ProjectList
+    │    ├── ProjectCard (repeated)
+    │    └── PaginationControls
+    ├── FeaturedSections
+    │    ├── TopProjects
+    │    └── TopOrganizations
+    └── ProjectDetail (separate route)
+
