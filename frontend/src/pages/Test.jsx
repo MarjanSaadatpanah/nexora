@@ -1,86 +1,45 @@
-// import { useLocation, useNavigate, useParams } from 'react-router-dom';
-// import { useEffect, useState } from 'react';
-// import { GetProjectById } from '../services/api';
-// import RecentlyAdded from '../components/RecentlyAdded'
-// import ExpieringSoon from '../components/ExpieringSoon'
-// import TopProjects from '../components/TopProjects';
+import React, { useEffect, useState } from 'react'
+import Nav from '../components/Nav';
 
-// const ProjectDetails = () => {
-//     const { id } = useParams();
-//     const location = useLocation();
-//     const navigate = useNavigate();
-//     const [project, setProject] = useState(null);
-//     const [isLoading, setIsLoading] = useState(true);
-//     const [error, setError] = useState(null);
+const Test = () => {
+    const [isScrolled, setIsScrolled] = useState(false);
 
-//     useEffect(() => {
-//         const fetchProject = async () => {
-//             try {
-//                 setIsLoading(true);
-//                 const data = await GetProjectById(id);
-//                 setProject(data);
-//                 console.log('single project: ', data)
-//             } catch (err) {
-//                 console.error(err);
-//                 setError('Failed to fetch project details');
-//             } finally {
-//                 setIsLoading(false);
-//             }
-//         };
+    useEffect(() => {
+        const handleScroll = () => {
 
-//         fetchProject();
-//     }, [id]);
-
-//     const handleBack = () => {
-//         if (location.state?.projectList && location.state?.searchTerm) {
-//             navigate('/', { state: location.state });
-//         } else {
-//             navigate('/');
-//         }
-//     };
-
-//     if (isLoading) return <p>Loading...</p>;
-//     if (error) return <p>{error}</p>;
-//     if (!project) return <p>No project found</p>;
-
-//     return (
-//         <div className="w-full m-auto pt-5">
-//             <button onClick={handleBack} className="bg-gray-200 px-4 py-2 rounded mb-5">
-//                 Back to All Search Results
-//             </button>
-//             <h1 className="text-2xl font-bold">{project.topic}</h1>
-//             <p className="text-lg">{project.acronym}</p>
-//             <p>EU Contribution: {project.eu_contribution}</p>
-//             <p className="mt-4">{project.objective}</p>
-
-//             <div className='mt-40'>
-//                 <RecentlyAdded />
-//                 <TopProjects />
-//                 <ExpieringSoon />
-//             </div>
-//         </div>
-//     );
-// };
-
-// export default ProjectDetails;
-{/* call_for_proposal: 
-
-call_topic: 
-
-coordinator: 
-
-end_date: 
-
-funded_under: 
-
-id: 
-
-participants: 
-[{…}]
-programme: 
-
-source: 
+            if (window.scrollY > 50) {
+                setIsScrolled(true);
+            } else {
+                setIsScrolled(false);
+            }
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
 
 
-: 
- */}
+    const searchAndFilterClass = isScrolled
+        ? "bg-red-500 fixed top-0 left-0 right-0 z-50"
+        : "";
+
+    return (
+        <div>
+            <Nav className={searchAndFilterClass} />
+            hohoho
+
+            <p className="h-96 bg-slate-500" >
+                hohoho
+            </p>
+            <p className="h-96 bg-slate-500" >
+                hohoho
+            </p>
+            <p className="h-96 bg-slate-500" >
+                hohoho
+            </p>
+        </div>
+    )
+}
+
+export default Test

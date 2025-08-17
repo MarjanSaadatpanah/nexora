@@ -6,6 +6,7 @@ from app.models.organization import Organization
 from app.extensions import db
 from datetime import date
 from sqlalchemy.orm import aliased
+from sqlalchemy import func
 
 
 projects_bp = Blueprint('projects', __name__)
@@ -215,7 +216,6 @@ def search_projects():
 
 # 6. Single project
 
-
 @projects_bp.route("/<int:project_id>", methods=["GET"])
 def get_project(project_id):
     project = Project.query.get_or_404(project_id)
@@ -230,6 +230,13 @@ def get_project(project_id):
     coordinator = None
     participants = []
     for po, org in project_orgs:
+        # Count how many projects this org participates in
+        project_count = (
+            db.session.query(func.count(ProjectOrganization.project_id))
+            .filter(ProjectOrganization.organization_id == org.id)
+            .scalar()
+        )
+
         org_info = {
             "id": org.id,
             "acronym": org.acronym,
@@ -239,7 +246,8 @@ def get_project(project_id):
             "role": po.organization_role,
             "correct_contribution": str(po.correct_contribution),
             "net_eu_contribution": str(po.net_eu_contribution),
-            "project_or_organ_linkedin": po.project_or_organ_linkedin
+            "project_or_organ_linkedin": po.project_or_organ_linkedin,
+            "project_count": project_count   # ✅ here
         }
         if po.organization_role and po.organization_role.lower() == "coordinator":
             coordinator = org_info

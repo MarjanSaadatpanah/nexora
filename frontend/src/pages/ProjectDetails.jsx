@@ -229,7 +229,10 @@ const ProjectDetails = () => {
                                     <div className='flex w-full'>
                                         <div className="flex w-3/5 ml-4 pr-3">
                                             <div>
-                                                <span>{participant.name || participant.organization || 'No Name'}</span>
+                                                <p>
+                                                    <span>{participant.name || 'No Name'}</span>
+                                                    <span className='ml-5 inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full'>{participant.project_count}</span>
+                                                </p>
                                                 <div className="mt-1 flex">
                                                     {/* <p className="text-xs">{getName(participant.country) || participant.country || 'No Country'}</p> */}
                                                     <ReactCountryFlag
