@@ -1,7 +1,7 @@
 backend/
 ├── app/
 │   ├── __init__.py             # App factory
-│   ├── config.py               # Config class (DB URI, etc.)
+│   ├── config.py               # Config class (DB URI, etc)
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── project.py
