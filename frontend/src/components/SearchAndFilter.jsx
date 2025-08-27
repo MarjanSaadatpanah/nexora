@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IoFilter } from "react-icons/io5";
 import Filter from './Filter';
 import { SearchProjects } from '../services/api';
@@ -19,6 +19,8 @@ const SearchAndFilter = () => {
     const [filterVisible, setFilterVisible] = useState(false);
 
     const debounceRef = useRef(null);
+
+    const navigate = useNavigate();
 
     // --- FETCH PROJECTS ---
     const fetchProjects = async (query, pageNumber = 1, append = false) => {
@@ -62,6 +64,7 @@ const SearchAndFilter = () => {
     // --- HANDLERS ---
     const handleSearchChange = (e) => {
         setSearchTerm(e.target.value);
+        navigate('/')
     };
 
 

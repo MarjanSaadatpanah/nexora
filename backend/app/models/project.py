@@ -18,5 +18,12 @@ class Project(db.Model):
     call_for_proposal = db.Column(db.String(255))
     source = db.Column(db.String(255))
 
+    # existing relationship
     organizations = db.relationship(
         'ProjectOrganization', back_populates='project')
+
+    # NEW: coordinator_id column and relationship
+    coordinator_id = db.Column(db.Integer, db.ForeignKey(
+        'organizations.id'), nullable=True)
+    coordinator = db.relationship(
+        'Organization', foreign_keys=[coordinator_id])
