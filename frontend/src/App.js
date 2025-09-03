@@ -6,22 +6,6 @@ import AllProjectsPaginated from './pages/AllProjectsPaginated';
 import ProjectDetails from './pages/ProjectDetails';
 import Test from './pages/Test'
 
-// function App() {
-//   return (
-//     <SearchProvider>
-//       <Router>
-//         <Routes>
-//           <Route path="/" element={<Layout />}>
-//             <Route path="all-projects" element={<AllProjectsPaginated />} />
-//             <Route path="project/:id" element={<ProjectDetails />} />
-//             <Route path="test" element={<Test />} />
-//           </Route>
-//           <Route index element={<Home className="bg-slate-100" />} />
-//         </Routes>
-//       </Router>
-//     </SearchProvider>
-//   );
-// }
 function App() {
   return (
     <SearchProvider>

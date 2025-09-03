@@ -1,0 +1,173 @@
+import React, { useEffect, useState } from "react";
+import { Bar } from "react-chartjs-2";
+import {
+    Chart as ChartJS,
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement,
+    CategoryScale,
+    LinearScale,
+    BarElement
+} from "chart.js";
+import { ClipLoader } from "react-spinners";
+
+ChartJS.register(
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement,
+    CategoryScale,
+    LinearScale,
+    BarElement
+);
+
+export default function ProjectsByEuContribution() {
+    const [chartData, setChartData] = useState(null);
+    const [rawData, setRawData] = useState([]); // Store the raw data for tooltips
+
+    useEffect(() => {
+        fetch("http://localhost:5000/stats/top_projects_by_eu_contribution")
+            .then((res) => res.json())
+            .then((data) => {
+                setRawData(data); // Store the raw data
+                setChartData({
+                    labels: data.map((item) => item.acronym || "Unknown"),
+                    datasets: [
+                        {
+                            data: data.map((item) => item.eu_contribution),
+                            backgroundColor: [
+                                "#6DAEDB", // Medium blue
+                                "#77DD77", // Medium green
+                                "#FFB347", // Peach-orange
+                                "#B19CD9", // Lavender
+                                "#FF6961", // Coral
+                                "#AEC6CF", // Light blue
+                                "#FDFD96", // Light yellow
+                                "#84B082", // Sage green
+                                "#F49AC2", // Pink
+                                "#CB99C9", // Mauve
+                            ],
+                            borderColor: "rgba(255, 255, 255, 0.8)",
+                            borderWidth: 1,
+                            borderRadius: 6,
+                            hoverBackgroundColor: [
+                                "#5A9BC8", // Darker blue
+                                "#66CC66", // Darker green
+                                "#F0A040", // Darker peach-orange
+                                "#9E8AC9", // Darker lavender
+                                "#F05959", // Darker coral
+                                "#9BB5C4", // Darker light blue
+                                "#F5F586", // Darker light yellow
+                                "#739E71", // Darker sage green
+                                "#E48AB0", // Darker pink
+                                "#BA88B8", // Darker mauve
+                            ],
+                        },
+                    ],
+                });
+            });
+    }, []);
+
+    if (!chartData) return (
+        <div className="w-full max-w-lg ">
+            <ClipLoader className="w-1/2 mx-auto" />
+        </div>
+    );
+
+    return (
+        <div className="bg-white p-6 w-full mt-32 max-w-6xl mx-auto">
+            <h2 className="text-xl text-center mb-2 text-gray-800">
+                Top 15 Projects with high EU Contribution
+            </h2>
+            <div className="h-96 w-full">
+                <Bar
+                    data={chartData}
+                    options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'x',
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                            tooltip: {
+                                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                                titleColor: "#333",
+                                bodyColor: "#555",
+                                borderColor: "#ddd",
+                                borderWidth: 1,
+                                callbacks: {
+                                    title: function (tooltipItems) {
+                                        // Show acronym in the tooltip title
+                                        return tooltipItems[0].label;
+                                    },
+                                    label: function (context) {
+                                        // Get the index of the hovered item
+                                        const dataIndex = context.dataIndex;
+                                        // Get the project topic from the raw data
+                                        const projectTopic = rawData[dataIndex]?.project_topic || "No topic available";
+                                        // Format the value with Euro symbol
+                                        const value = `€${context.raw.toLocaleString()}`;
+                                        // Return both the project topic and the value
+                                        return [
+                                            `Topic: ${projectTopic}`,
+                                            `Contribution: ${value}`
+                                        ];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: "rgba(0, 0, 0, 0.05)",
+                                },
+                                ticks: {
+                                    callback: function (value) {
+                                        return `€${value.toLocaleString()}`;
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: "Contribution Amount (€)",
+                                    font: {
+                                        weight: "bold",
+                                        size: 12
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false,
+                                },
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                },
+                                title: {
+                                    display: true,
+                                    text: "Projects with acronym",
+                                    font: {
+                                        weight: "bold",
+                                        size: 12
+                                    }
+                                }
+                            },
+                        },
+                        elements: {
+                            bar: {
+                                barPercentage: 0.7,
+                                categoryPercentage: 0.8,
+                            }
+                        }
+                    }}
+                />
+            </div>
+            <div className="mt-4 text-sm text-gray-500 text-center">
+                Data showing the contribution amounts for each project
+            </div>
+        </div>
+    );
+}

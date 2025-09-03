@@ -5,7 +5,6 @@ from app.models.project_organization import ProjectOrganization
 from app.models.organization import Organization
 from app.extensions import db
 from datetime import date
-from sqlalchemy.orm import aliased
 from sqlalchemy import func
 
 
@@ -74,7 +73,6 @@ def get_top_projects():
     } for p in projects])
 
 
-# 5. Serach and Filter (search_projects)
 # 5. Search and Filter (search_projects)
 @projects_bp.route("/search", methods=["GET"])
 def search_projects():
@@ -274,7 +272,7 @@ def get_project(project_id):
             "role": po.organization_role,
             "correct_contribution": str(po.correct_contribution),
             "net_eu_contribution": str(po.net_eu_contribution),
-            "project_or_organ_linkedin": po.project_or_organ_linkedin,
+            "project_or_organ_linkedin": po.project_linkedin,
             "project_count": project_count
         })
 
