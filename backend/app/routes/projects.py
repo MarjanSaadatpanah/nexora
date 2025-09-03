@@ -5,7 +5,6 @@ from app.models.project_organization import ProjectOrganization
 from app.models.organization import Organization
 from app.extensions import db
 from datetime import date
-from sqlalchemy.orm import aliased
 from sqlalchemy import func
 
 
@@ -74,7 +73,7 @@ def get_top_projects():
     } for p in projects])
 
 
-# 5. Serach and Filter
+# 5. Search and Filter (search_projects)
 @projects_bp.route("/search", methods=["GET"])
 def search_projects():
     from sqlalchemy import or_, and_
@@ -95,10 +94,9 @@ def search_projects():
     status = request.args.get("status")  # "ongoing" or "expired"
     start_date = request.args.get("start_date")  # YYYY-MM-DD
     end_date = request.args.get("end_date")      # YYYY-MM-DD
-    countries_param = request.args.get(
-        "countries")  # <-- NOTE: use "countries"
+    countries_param = request.args.get("countries")  # comma-separated
 
-    # --- Base Query (single unified query) ---
+    # --- Base Query ---
     projects_query = (
         db.session.query(Project)
         .outerjoin(ProjectOrganization, Project.project_id == ProjectOrganization.project_id)
@@ -107,7 +105,6 @@ def search_projects():
             or_(
                 Project.project_topic.ilike(f"%{query}%"),
                 Project.acronym.ilike(f"%{query}%"),
-                Project.objective.ilike(f"%{query}%"),
                 Organization.organization_name.ilike(f"%{query}%"),
                 Organization.acronym.ilike(f"%{query}%")
             )
@@ -116,7 +113,6 @@ def search_projects():
 
     # --- Apply Filters ---
     conditions = []
-
     if programme:
         conditions.append(Project.programme == programme)
     if min_contribution is not None:
@@ -130,13 +126,12 @@ def search_projects():
                           Project.end_date >= today))
     elif status == "expired":
         conditions.append(Project.end_date < today)
-
     if start_date:
         conditions.append(Project.start_date >= start_date)
     if end_date:
         conditions.append(Project.end_date <= end_date)
 
-    # Handle countries filter (comma-separated list)
+    # Countries filter
     if countries_param:
         countries = [c.strip()
                      for c in countries_param.split(",") if c.strip()]
@@ -155,17 +150,19 @@ def search_projects():
     # --- Format Results ---
     results = []
     for p in paginated.items:
+        # Fetch participants only
+        participants = []
         project_orgs = (
             db.session.query(ProjectOrganization, Organization)
             .join(Organization, ProjectOrganization.organization_id == Organization.id)
             .filter(ProjectOrganization.project_id == p.project_id)
             .all()
         )
-
-        coordinator = None
-        participants = []
         for po, org in project_orgs:
-            org_info = {
+            # skip coordinator
+            if p.coordinator_id == org.id:
+                continue
+            participants.append({
                 "id": org.id,
                 "acronym": org.acronym,
                 "name": org.organization_name,
@@ -175,11 +172,21 @@ def search_projects():
                 "correct_contribution": str(po.correct_contribution),
                 "net_eu_contribution": str(po.net_eu_contribution),
                 "project_or_organ_linkedin": po.project_or_organ_linkedin
-            }
-            if po.organization_role and po.organization_role.lower() == "coordinator":
-                coordinator = org_info
-            else:
-                participants.append(org_info)
+            })
+
+        # Fetch coordinator info
+        coordinator_info = None
+        if p.coordinator_id:
+            coordinator_org = Organization.query.get(p.coordinator_id)
+            if coordinator_org:
+                coordinator_info = {
+                    "id": coordinator_org.id,
+                    "acronym": coordinator_org.acronym,
+                    "name": coordinator_org.organization_name,
+                    "country": coordinator_org.country,
+                    "linkedin": coordinator_org.linkedin,
+                    "role": "coordinator"
+                }
 
         status_value = "ongoing" if (
             p.start_date <= today <= p.end_date) else "expired"
@@ -201,7 +208,7 @@ def search_projects():
             "call_topic": p.call_topic,
             "call_for_proposal": p.call_for_proposal,
             "source": p.source,
-            "coordinator": coordinator,
+            "coordinator": coordinator_info,
             "participants": participants
         })
 
@@ -220,24 +227,43 @@ def search_projects():
 def get_project(project_id):
     project = Project.query.get_or_404(project_id)
 
+    # --- Fetch Coordinator ---
+    coordinator = None
+    if project.coordinator_id:
+        org = Organization.query.get(project.coordinator_id)
+        if org:
+            project_count = (
+                db.session.query(func.count(ProjectOrganization.project_id))
+                .filter(ProjectOrganization.organization_id == org.id)
+                .scalar()
+            )
+            coordinator = {
+                "id": org.id,
+                "acronym": org.acronym,
+                "name": org.organization_name,
+                "country": org.country,
+                "linkedin": org.linkedin,
+                "project_count": project_count,
+                "role": "coordinator"
+            }
+
+    # --- Fetch Participants (excluding coordinator) ---
+    participants = []
     project_orgs = (
         db.session.query(ProjectOrganization, Organization)
         .join(Organization, ProjectOrganization.organization_id == Organization.id)
         .filter(ProjectOrganization.project_id == project.project_id)
+        .filter(ProjectOrganization.organization_id != project.coordinator_id)
         .all()
     )
 
-    coordinator = None
-    participants = []
     for po, org in project_orgs:
-        # Count how many projects this org participates in
         project_count = (
             db.session.query(func.count(ProjectOrganization.project_id))
             .filter(ProjectOrganization.organization_id == org.id)
             .scalar()
         )
-
-        org_info = {
+        participants.append({
             "id": org.id,
             "acronym": org.acronym,
             "name": org.organization_name,
@@ -246,13 +272,9 @@ def get_project(project_id):
             "role": po.organization_role,
             "correct_contribution": str(po.correct_contribution),
             "net_eu_contribution": str(po.net_eu_contribution),
-            "project_or_organ_linkedin": po.project_or_organ_linkedin,
-            "project_count": project_count   # ✅ here
-        }
-        if po.organization_role and po.organization_role.lower() == "coordinator":
-            coordinator = org_info
-        else:
-            participants.append(org_info)
+            "project_or_organ_linkedin": po.project_linkedin,
+            "project_count": project_count
+        })
 
     # --- Calculate status and remaining days ---
     today = date.today()
@@ -268,14 +290,15 @@ def get_project(project_id):
             status = "not started"
         remaining_days = (project.end_date - today).days
 
+    # --- Build Response ---
     result = {
         "id": project.project_id,
         "topic": project.project_topic,
         "acronym": project.acronym,
         "start_date": project.start_date,
         "end_date": project.end_date,
-        "status": status,  # <-- add status
-        "remaining_days": remaining_days,  # <-- add remaining days
+        "status": status,
+        "remaining_days": remaining_days,
         "total_cost": str(project.total_cost),
         "eu_contribution": str(project.eu_contribution),
         "objective": project.objective,

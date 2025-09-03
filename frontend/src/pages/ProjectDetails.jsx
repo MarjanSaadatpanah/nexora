@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { GetProjectById } from '../services/api';
+import { SearchContext } from '../contexts/SearchContext';
+
 import RecentlyAdded from '../components/RecentlyAdded';
 import ExpieringSoon from '../components/ExpieringSoon';
 import TopProjects from '../components/TopProjects';
+
 import { motion } from 'framer-motion';
 import { BsCaretDownFill } from "react-icons/bs";
 import { IoPersonCircleOutline } from "react-icons/io5";
@@ -11,8 +14,8 @@ import { HiOutlineMail } from "react-icons/hi";
 import { MdOutlineLocalPhone } from "react-icons/md";
 import { CiLinkedin } from "react-icons/ci";
 import { FaArrowLeftLong } from "react-icons/fa6";
+
 import { getName, getCode } from 'country-list';
-import { SearchContext } from '../contexts/SearchContext';
 import ReactCountryFlag from "react-country-flag";
 
 

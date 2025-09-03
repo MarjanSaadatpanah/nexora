@@ -6,6 +6,8 @@ import RecentlyAdded from '../components/RecentlyAdded'
 import SearchAndFilter from '../components/SearchAndFilter'
 import TopProjects from '../components/TopProjects';
 import { useContext } from 'react';
+import Stats from '../components/stats/Stats'
+
 
 
 
@@ -18,6 +20,7 @@ const Home = () => {
             {!searchActive && <Hero />}
             <Category />
             <SearchAndFilter />
+            {!searchActive && <Stats />}
             {!searchActive && <RecentlyAdded />}
             {!searchActive && <TopProjects />}
             {!searchActive && <ExpieringSoon />}
