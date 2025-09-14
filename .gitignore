@@ -1,5 +1,5 @@
 /backend/.env
 /node_modules/
 /frontend/node_modules/
-/db/backup/
+/db-backup/
 /cordisAPI.html
