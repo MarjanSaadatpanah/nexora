@@ -27,7 +27,7 @@ export default function Category() {
                 >
                     <BottomNavigationAction sx={{ flexDirection: 'row', '& .MuiBottomNavigationAction-label': { paddingLeft: '8px', } }} label="Home" icon={<HomeIcon />} onClick={() => navigate("/")} />
                     <BottomNavigationAction sx={{ flexDirection: 'row', '& .MuiBottomNavigationAction-label': { paddingLeft: '8px', } }} label="Statistics" icon={<BarChartIcon />} onClick={() => navigate("/stats")} />
-                    <BottomNavigationAction sx={{ flexDirection: 'row', '& .MuiBottomNavigationAction-label': { paddingLeft: '8px', } }} label="All Projects" icon={<SelectAll />} />
+                    <BottomNavigationAction sx={{ flexDirection: 'row', '& .MuiBottomNavigationAction-label': { paddingLeft: '8px', } }} label="All Projects" icon={<SelectAll />} onClick={() => navigate("/all-projects")} />
                     <BottomNavigationAction sx={{ flexDirection: 'row', '& .MuiBottomNavigationAction-label': { paddingLeft: '8px', } }} label="Recently Added" icon={<NewReleases />} />
                     <BottomNavigationAction sx={{ flexDirection: 'row', '& .MuiBottomNavigationAction-label': { paddingLeft: '8px', } }} label="Top Funded" icon={<MonetizationOn />} />
                     <BottomNavigationAction sx={{ flexDirection: 'row', '& .MuiBottomNavigationAction-label': { paddingLeft: '8px', } }} label="Expiring Soon" icon={<Speed />} />

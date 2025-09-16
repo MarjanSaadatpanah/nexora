@@ -18,7 +18,7 @@ const Hero = () => {
             </div>
             <div className="hidden lg:mt-0 lg:col-span-4 lg:flex">
                 {/* <img src={logo} alt='logo' /> */}
-                <ProjectsByCountryChart />
+                {/* <ProjectsByCountryChart /> */}
             </div>
         </div>
 

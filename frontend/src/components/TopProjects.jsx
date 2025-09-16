@@ -21,7 +21,7 @@ const TopProjects = () => {
             <p className="max-w-2xl font-light text-gray-500 lg:mb-8 md:text-lg lg:text-xl 400"> The projects with the largest budgets</p>
             <div className="grid gap-x-8 gap-y-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {topTenProjects.map((project) => (
-                    <Cards key={project.id} {...project} link={`/project/${project.id}`} />
+                    <Cards key={project.id} {...project} link={`/project/${project.id}`} pState={{ project: project }} />
                 ))}
             </div>
 

@@ -1,4 +1,5 @@
-import axios from 'axios'
+import axios from 'axios';
+
 const client = axios.create({
     baseURL: 'http://localhost:5000/api/'
 })
@@ -20,21 +21,18 @@ export const SearchProjects = async (query, page = 1, perPage = 10, filters = {}
         }
     });
 
-    console.log('Cleaned SearchProjects Request:', params);
-
     const res = await client.get('/projects/search', { params });
-    console.log('SearchProjects Response:', res.data);
     return res.data;
 };
-
-
 
 
 
 export const GetProjectById = async (id) => {
     const res = await client.get(`projects/${id}`);
+    console.log("projects and organizations from single: ", res.data)
     return res.data;
 };
+
 
 export async function AllProjects() {
     const { data } = await client.get('projects');

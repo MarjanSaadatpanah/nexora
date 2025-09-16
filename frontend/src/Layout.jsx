@@ -7,7 +7,7 @@ const Layout = () => {
     const isHomePage = location.pathname === '/';
     return (
         <>
-            <div className='w-9/12 m-auto mt-2'>
+            <div className='lg:w-9/12 w-11/12 m-auto mt-5'>
                 {!isHomePage && <Nav />}
 
                 <Outlet />
