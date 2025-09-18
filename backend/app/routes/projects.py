@@ -98,44 +98,16 @@ def get_top_projects():
     return jsonify(projects)
 
 
-# @projects_bp.route("/search", methods=["GET"])
-# def search_projects():
-#     """Search projects by title, acronym, or keywords + filters."""
-#     q = request.args.get("q", "").strip()
-#     page = int(request.args.get("page", 1))
-#     per_page = int(request.args.get("per_page", 10))
-#     skip = (page - 1) * per_page
-
-#     query = {}
-#     if q:
-#         query["$or"] = [
-#             {"title": {"$regex": q, "$options": "i"}},
-#             {"acronym": {"$regex": q, "$options": "i"}},
-#             {"keywords": {"$regex": q, "$options": "i"}},
-#         ]
-
-#     # Optional filters
-#     status = request.args.get("status")
-#     if status:
-#         query["status"] = status
-
-#     programme = request.args.get("programme")
-#     if programme:
-#         query["frameworkProgramme"] = programme
-
-#     cursor = projects_collection.find(query).skip(skip).limit(per_page)
-#     results = [normalize_project(doc) for doc in cursor]
-#     total_count = projects_collection.count_documents(query)
-
-#     return jsonify({
-#         "projects": results,
-#         "total": total_count,
-#         "page": page,
-#         "pages": (total_count + per_page - 1) // per_page,
-#         "per_page": per_page
-#     })
+# # for collection the topics of projects to craete a filter on topics
+# @projects_bp.route("/topics", methods=["GET"])
+# def get_topics():
+#     topics = projects_collection.distinct("topics")
+#     topics = [t for t in topics if t]
+#     topics.sort()
+#     return jsonify({"topics": topics})
 
 
+# search and filter result
 def serialize_doc(doc):
     """Convert ObjectId to string for JSON."""
     doc = dict(doc)
@@ -154,6 +126,8 @@ def search_projects():
     skip = (page - 1) * per_page
 
     query = {}
+
+    # --- Free text search ---
     if q:
         query["$or"] = [
             {"title": {"$regex": q, "$options": "i"}},
@@ -161,7 +135,7 @@ def search_projects():
             {"keywords": {"$regex": q, "$options": "i"}},
         ]
 
-    # Optional filters
+    # --- Filters ---
     status = request.args.get("status")
     if status:
         query["status"] = status
@@ -170,6 +144,31 @@ def search_projects():
     if programme:
         query["frameworkProgramme"] = programme
 
+    # --- Date filters (string comparison) ---
+    start_date = request.args.get("start_date")
+    if start_date:
+        query["startDate"] = {"$gte": start_date}
+
+    end_date = request.args.get("end_date")
+    if end_date:
+        query.setdefault("endDate", {})
+        query["endDate"]["$lte"] = end_date
+
+    # --- Contribution ranges ---
+
+    min_contribution = request.args.get("min_contribution")
+    max_contribution = request.args.get("max_contribution")
+    if min_contribution or max_contribution:
+        try:
+            query["ecMaxContribution"] = {}
+            if min_contribution:
+                query["ecMaxContribution"]["$gte"] = float(min_contribution)
+            if max_contribution:
+                query["ecMaxContribution"]["$lte"] = float(max_contribution)
+        except ValueError:
+            pass
+
+    # --- Find matching projects ---
     cursor = projects_collection.find(query).skip(skip).limit(per_page)
     results = []
 
@@ -177,20 +176,40 @@ def search_projects():
         doc = serialize_doc(doc)
         project_id = doc["id"]
 
-        # fetch organizations
-        organizations = [
-            serialize_doc(org)
-            for org in organizations_collection.find({"projectID": project_id})
-        ]
+        # Fetch related organizations
+        organizations = []
+        for org in organizations_collection.find({"projectID": project_id}):
+            org_data = serialize_doc(org)
 
-        # find coordinator
+            # Count how many projects this organization participates in
+            org_data["project_count"] = organizations_collection.count_documents({
+                "organisationID": org_data["organisationID"]
+            })
+
+            # Count how many projects this organization coordinates
+            org_data["coordinator_count"] = organizations_collection.count_documents({
+                "organisationID": org_data["organisationID"],
+                "role": {"$regex": "^coordinator$", "$options": "i"}
+            })
+
+            organizations.append(org_data)
+
+        # Filter by countries if provided
+        countries = request.args.get("countries")
+        if countries:
+            allowed_countries = set(countries.split(","))
+            org_countries = {org.get("country") for org in organizations}
+            if org_countries.isdisjoint(allowed_countries):
+                continue  # Skip project if no matching country
+
+        # Find coordinator
         coordinator = next(
             (org for org in organizations if org.get(
                 "role", "").lower() == "coordinator"),
             None
         )
 
-        # attach coordinator and organizations
+        # Attach coordinator + organizations
         doc["coordinator"] = coordinator
         doc["organizations"] = organizations
 
@@ -207,6 +226,7 @@ def search_projects():
     })
 
 
+# single project
 def convert_objectid(doc):
     """Convert all ObjectId fields in a document to strings."""
     for k, v in doc.items():

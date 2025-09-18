@@ -1,33 +1,44 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AnimatePresence, motion } from "framer-motion";
 import { getName, getCodes } from "country-list";
 import Select from "react-select";
+import ContributionSlider from './filter/ContributionSlider';
+import { IoMdClose } from "react-icons/io";
+
 
 const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) => {
-    // Initialize countries from currentFilters (ISO codes as comma string)
+
     const initialCountries = currentFilters?.countries
         ? currentFilters.countries.split(",")
         : [];
 
     const [programme, setProgramme] = useState(currentFilters?.programme || "");
     const [status, setStatus] = useState(currentFilters?.status || "");
-    const [minContribution, setMinContribution] = useState(currentFilters?.min_contribution || "");
-    const [maxContribution, setMaxContribution] = useState(currentFilters?.max_contribution || "");
     const [startDate, setStartDate] = useState(currentFilters?.start_date || "");
     const [endDate, setEndDate] = useState(currentFilters?.end_date || "");
     const [selectedCountries, setSelectedCountries] = useState(initialCountries);
 
-    // Build options: array of { value: ISO_code, label: country_name }
+    const [minContribution, setMinContribution] = useState(
+        currentFilters?.min_contribution || 0
+    );
+    const [maxContribution, setMaxContribution] = useState(
+        currentFilters?.max_contribution || 1000000000
+    );
+
     const countryOptions = getCodes().map(code => ({
         value: code,
         label: getName(code)
     }));
-
-    // Map selected ISO codes to react-select option objects for controlled value
     const selectedOptions = countryOptions.filter(opt => selectedCountries.includes(opt.value));
+
+    const handleContributionChange = ({ min_contribution, max_contribution }) => {
+        setMinContribution(min_contribution);
+        setMaxContribution(max_contribution);
+    };
 
     const handleFiltering = () => {
         onApply({
+            ...currentFilters,
             programme,
             status,
             min_contribution: minContribution,
@@ -57,18 +68,17 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                         initial={{ opacity: 0, scale: 0 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0 }}
-                        className="bg-blue-100 my-4 p-5 absolute top-15 right-56 w-6/12 m-auto z-[9999]"
+                        className="bg-white px-11 p-5 fixed border-l-1 border-black top-0 right-0 lg:w-3/12 w-full h-screen m-auto z-[9999]"
                         key="box"
                     >
-                        {/* Programme */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium">Programme</label>
-                            <input
-                                type="text"
-                                value={programme}
-                                onChange={(e) => setProgramme(e.target.value)}
-                                className="w-full p-2 border rounded"
-                            />
+                        <div className='flex justify-between  mb-11'>
+                            <label className="hidden sm:block text-lg font-medium">Filter By</label>
+                            <button
+                                className="cursor-pointer"
+                                onClick={() => setFilterVisible(false)}
+                            >
+                                <IoMdClose />
+                            </button>
                         </div>
 
                         {/* Status */}
@@ -80,8 +90,9 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                                 className="w-full p-2 border rounded"
                             >
                                 <option value="">All</option>
-                                <option value="ongoing">Ongoing</option>
-                                <option value="expired">Expired</option>
+                                <option value="CLOSED">CLOSED</option>
+                                <option value="SIGNED">SIGNED</option>
+                                <option value="TERMINATED">TERMINATED</option>
                             </select>
                         </div>
 
@@ -94,33 +105,19 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                                 value={selectedOptions}
                                 onChange={(selected) => setSelectedCountries(selected ? selected.map(s => s.value) : [])}
                                 placeholder="Search and select countries..."
+                                className='border rounded'
                             />
                         </div>
 
                         {/* EU Contribution Range */}
-                        <div className="mb-4 flex gap-2">
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium">Min Contribution (€)</label>
-                                <input
-                                    type="number"
-                                    value={minContribution}
-                                    onChange={(e) => setMinContribution(e.target.value)}
-                                    className="w-full p-2 border rounded"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium">Max Contribution (€)</label>
-                                <input
-                                    type="number"
-                                    value={maxContribution}
-                                    onChange={(e) => setMaxContribution(e.target.value)}
-                                    className="w-full p-2 border rounded"
-                                />
-                            </div>
-                        </div>
+                        <ContributionSlider min={0}
+                            max={1000000000}
+                            value={[Number(minContribution), Number(maxContribution)]}
+                            onChange={handleContributionChange}
+                        />
 
                         {/* Date Range */}
-                        <div className="mb-4 flex gap-2">
+                        <div className="mb-6 gap-2">
                             <div className="flex-1">
                                 <label className="block text-sm font-medium">Start Date</label>
                                 <input
@@ -142,28 +139,25 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                         </div>
 
                         {/* Buttons */}
-                        <div className="flex justify-end gap-2 mt-9">
-                            <motion.button
-                                className="py-2 px-4 bg-green-500 text-white rounded"
+                        <div className="mt-12">
+                            <button
+                                className="py-2 px-4 bg-green-500 text-white rounded w-full mt-2 cursor-pointer"
                                 onClick={handleFiltering}
-                                whileTap={{ y: 1 }}
                             >
                                 Apply
-                            </motion.button>
-                            <motion.button
-                                className="py-2 px-4 bg-gray-500 text-white rounded"
+                            </button>
+                            <button
+                                className="py-2 px-4 bg-gray-500 text-white rounded w-full mt-2 cursor-pointer"
                                 onClick={handleResetFiltering}
-                                whileTap={{ y: 1 }}
                             >
                                 Reset
-                            </motion.button>
-                            <motion.button
-                                className="py-2 px-4 bg-red-500 text-white rounded"
+                            </button>
+                            <button
+                                className="py-2 px-4 bg-red-500 text-white rounded w-full mt-2 cursor-pointer"
                                 onClick={() => setFilterVisible(false)}
-                                whileTap={{ y: 1 }}
                             >
                                 Cancel
-                            </motion.button>
+                            </button>
                         </div>
                     </motion.div>
                 )}

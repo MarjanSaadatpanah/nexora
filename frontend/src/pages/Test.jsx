@@ -1,41 +1,30 @@
-import * as React from 'react';
-import Card from '@mui/material/Card';
+
 import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
-import Stack from '@mui/material/Stack';
-import Divider from '@mui/material/Divider';
-import Typography from '@mui/material/Typography';
+import Slider from '@mui/material/Slider';
 
-export default function IntroDivider() {
+
+function valuetext(value) {
+    return `${value}°C`;
+}
+
+export default function Test() {
+    const [value, setValue] = React.useState([20, 37]);
+
+    console.log(value)
+
+    const handleChange = (event, newValue) => {
+        setValue(newValue);
+    };
+
     return (
-        <Card variant="outlined">
-            <Box sx={{ p: 2 }}>
-                <Stack
-                    direction="row"
-                    sx={{ justifyContent: 'space-between', alignItems: 'center' }}
-                >
-                    <Typography gutterBottom variant="h5" component="div">
-                        Toothbrush
-                    </Typography>
-                    <Typography gutterBottom variant="h6" component="div">
-                        ID: 4344550
-                    </Typography>
-                </Stack>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Pinstriped cornflower blue cotton blouse takes you on a walk to the park or
-                    just down the hall.
-                </Typography>
-            </Box>
-            <Divider />
-            <Box sx={{ p: 2 }}>
-                <Typography gutterBottom variant="body2">
-                    Key Words
-                </Typography>
-                <Stack direction="row" spacing={1}>
-                    <Chip color="primary" label="Soft" size="small" />
-
-                </Stack>
-            </Box>
-        </Card>
+        <Box sx={{ width: 300 }}>
+            <Slider
+                getAriaLabel={() => 'Temperature range'}
+                value={value}
+                onChange={handleChange}
+                valueLabelDisplay="auto"
+                getAriaValueText={valuetext}
+            />
+        </Box>
     );
 }

@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IoFilter } from "react-icons/io5";
-import { FaAdn } from "react-icons/fa";
-import { BiSolidDollarCircle } from "react-icons/bi";
+
 import Filter from './Filter';
 import { SearchProjects } from '../services/api';
 import { SearchContext } from '../contexts/SearchContext';
@@ -14,12 +14,14 @@ import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
 
 const SearchAndFilter = () => {
     const { searchTerm, setSearchTerm, projectList, setProjectList, setSearchActive, filters, setFilters, isLoading, setIsLoading } = useContext(SearchContext);
 
-    // const [page, setPage] = useState(1);
-    // const [hasMore, setHasMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     const location = useLocation();
     const isHomePage = location.pathname === '/';
@@ -32,21 +34,22 @@ const SearchAndFilter = () => {
 
     // --- FETCH PROJECTS ---
     const fetchProjects = async (query, pageNumber = 1, append = false) => {
-        setIsLoading(true);
+        if (append) setLoadingMore(true);
+        else setIsLoading(true);
+
         try {
             const response = await SearchProjects(query, pageNumber, 10, filters); // pass filters
             setProjectList(prev =>
                 append ? [...prev, ...response.projects] : response.projects
             );
-
-            // setHasMore(pageNumber < response.pages);
-            // setPage(pageNumber);
-            console.log('projectList: ', projectList)
+            setHasMore(pageNumber < response.pages);
+            setPage(pageNumber);
         } catch (error) {
             console.error('Search error:', error);
             setProjectList([]);
         } finally {
-            setIsLoading(false);
+            if (append) setLoadingMore(false);
+            else setIsLoading(false);
         }
     };
 
@@ -54,7 +57,7 @@ const SearchAndFilter = () => {
         if (!searchTerm.trim()) {
             if (debounceRef.current) clearTimeout(debounceRef.current);
             setProjectList([]);
-            // setHasMore(false);
+            setHasMore(false);
             setSearchActive(false);
             return;
         }
@@ -79,13 +82,17 @@ const SearchAndFilter = () => {
         setFilterVisible(false);
     };
 
+    const handleLoadMore = () => {
+        fetchProjects(searchTerm, page + 1, true);
+    };
+
     return (
         <>
             <div className="flex items-center mx-auto md:w-full">
-                <div class="relative w-full">
-                    <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                <div className="relative w-full">
+                    <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
                         {isLoading && (
-                            <ClockLoader class="w-4 h-4 text-gray-500" color="gray" size="30" />
+                            <ClockLoader className="w-4 h-4 text-gray-500" color="gray" size="30" />
                         )}
                     </div>
                     <input
@@ -93,7 +100,8 @@ const SearchAndFilter = () => {
                         value={searchTerm}
                         type="text"
                         placeholder="Search Projects, Acronyms, Organizations..."
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 ml-1" />
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 ml-1"
+                    />
                 </div>
 
                 <button
@@ -109,15 +117,15 @@ const SearchAndFilter = () => {
             <Filter
                 setFilterVisible={setFilterVisible}
                 filterVisible={filterVisible}
-                onApply={handleApplyFilters} // NEW: pass callback to Filter
-                currentFilters={filters} // optionally pass current filters
+                onApply={handleApplyFilters}
+                currentFilters={filters}
             />
 
             {/* Active Filter Summary */}
             {Object.entries(filters)
-                .filter(([_, value]) => value !== undefined && value !== null && value !== "") // show only active filters
+                .filter(([_, value]) => value !== undefined && value !== null && value !== "")
                 .length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex flex-wrap gap-2 m-2">
                         {Object.entries(filters)
                             .filter(([_, value]) => value !== undefined && value !== null && value !== "")
                             .map(([key, value]) => (
@@ -151,7 +159,7 @@ const SearchAndFilter = () => {
             {isHomePage && (
                 <ul>
                     {projectList.map((proj) => (
-                        <li key={proj.id} className='my-4 ml-1 shadow-lg' >
+                        <li key={proj.id} className='my-4 ml-1 shadow-lg'>
                             <Link
                                 to={`/project/${proj.id}`}
                                 state={{ project: proj }}
@@ -174,49 +182,33 @@ const SearchAndFilter = () => {
                                         </Typography>
                                     </Box>
                                     <Divider />
-                                    <Box sx={{ p: 1 }}>
-                                        {/* <Typography gutterBottom variant="body2">
-                                            Key Words
-                                        </Typography> */}
-                                        <Stack direction="row" spacing={1} flexWrap="wrap">
-                                            {proj.keywords.split(", ").map((keyw, index) => (
-                                                <Chip key={index} color="primary" label={keyw} size="small" sx={{ fontSize: '0.6rem' }} />
-                                            ))}
-                                        </Stack>
-                                    </Box>
+                                    {proj.keywords && (
+                                        <Box sx={{ p: 1 }}>
+                                            <Stack direction="row" spacing={1} flexWrap="wrap">
+                                                {proj.keywords?.split(", ").map((keyw, index) => (
+                                                    <Chip key={index} color="primary" label={keyw} size="small" sx={{ fontSize: '0.6rem' }} />
+                                                ))}
+                                            </Stack>
+                                        </Box>
+                                    )}
                                 </Card>
-                                {/* <div className="relative flex flex-col lg:mx-1 my-3 bg-blue-100 shadow-sm border border-slate-200 rounded-lg">
-                                    <div className="p-2 lg:p-4 relative">
-                                        <h6 className="mb-2 text-lg text-slate-800">
-                                            {proj.title}
-                                        </h6>
-                                        <div className="text-slate-800 leading-normal absolute right-0 top-0 hidden sm:block">
-                                            <button type="button" class="text-white bg-gray-400  font-medium rounded-tr-lg text-sm px-4 py-1.5 text-center inline-flex items-center me-2 mb-2">
-                                                <FaAdn class="w-4 h-5 me-2" />
-                                                {proj.acronym}
-                                            </button>
-                                        </div>
-                                        <div className="text-slate-800 leading-normal font-light mb-2 flex">
-                                            <span className="text-slate-800">ID: {proj.id}</span>
-
-                                            <div className="flex items-center justify-between ml-7">
-                                                <div className="flex items-center">
-                                                    <div className="text-sm">
-                                                        <span className="text-slate-600 flex">
-                                                            <BiSolidDollarCircle className='m-1' />
-                                                            EU Contribution: {proj.ecMaxContribution?.toLocaleString('en-US', { style: 'currency', currency: 'EUR' })} €
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div> */}
                             </Link>
                         </li>
                     ))}
                 </ul>
+            )}
+
+            {/* Pagination / Load More */}
+            {hasMore && (
+                <div className="flex justify-center my-4">
+                    <Button
+                        variant="contained"
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                    >
+                        {loadingMore ? "Loading..." : "Load More"}
+                    </Button>
+                </div>
             )}
         </>
     );
