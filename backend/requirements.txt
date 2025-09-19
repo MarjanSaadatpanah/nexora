@@ -1,3 +1,9 @@
 Flask
-Flask-SQLAlchemy
-pymysql
+# Flask-SQLAlchemy
+# pymysql
+
+flask-caching
+pymongo 
+dnspython
+dotenv
+flask-cors

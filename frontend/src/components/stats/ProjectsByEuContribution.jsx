@@ -27,7 +27,7 @@ export default function ProjectsByEuContribution() {
     const [rawData, setRawData] = useState([]); // Store the raw data for tooltips
 
     useEffect(() => {
-        fetch("http://localhost:5000/stats/top_projects_by_eu_contribution")
+        fetch("http://localhost:5000/api/stats/top_projects_by_eu_contribution")
             .then((res) => res.json())
             .then((data) => {
                 setRawData(data); // Store the raw data
@@ -99,17 +99,12 @@ export default function ProjectsByEuContribution() {
                                 borderWidth: 1,
                                 callbacks: {
                                     title: function (tooltipItems) {
-                                        // Show acronym in the tooltip title
                                         return tooltipItems[0].label;
                                     },
                                     label: function (context) {
-                                        // Get the index of the hovered item
                                         const dataIndex = context.dataIndex;
-                                        // Get the project topic from the raw data
                                         const projectTopic = rawData[dataIndex]?.project_topic || "No topic available";
-                                        // Format the value with Euro symbol
                                         const value = `€${context.raw.toLocaleString()}`;
-                                        // Return both the project topic and the value
                                         return [
                                             `Topic: ${projectTopic}`,
                                             `Contribution: ${value}`

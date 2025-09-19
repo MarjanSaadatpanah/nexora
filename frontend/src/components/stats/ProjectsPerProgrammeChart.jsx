@@ -26,11 +26,11 @@ export default function ProjectsPerProgrammeChart() {
     const [chartData, setChartData] = useState(null);
 
     useEffect(() => {
-        fetch("http://localhost:5000/stats/projects_per_programme")
+        fetch("http://localhost:5000/api/stats/projects_per_programme")
             .then((res) => res.json())
             .then((data) => {
                 setChartData({
-                    labels: data.map((item) => item.programme || "Unknown"),
+                    labels: data.slice(0, 10).map((item) => item.programme || "Unknown"),
                     datasets: [
                         {
                             data: data.map((item) => item.project_count),

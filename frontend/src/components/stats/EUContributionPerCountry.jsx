@@ -27,7 +27,7 @@ export default function EUContributionPerCountry() {
     const [chartData, setChartData] = useState(null);
 
     useEffect(() => {
-        fetch("http://localhost:5000/stats/eu_contribution_per_country")
+        fetch("http://localhost:5000/api/stats/eu_contribution_per_country")
             .then((res) => res.json())
             .then((data) => {
                 setChartData({

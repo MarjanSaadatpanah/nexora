@@ -16,7 +16,7 @@ export default function ProjectsByCountryChart() {
     const [chartData, setChartData] = useState(null);
 
     useEffect(() => {
-        fetch("http://localhost:5000/stats/projects_by_country")
+        fetch("http://localhost:5000/api/stats/projects_by_country")
             .then((res) => res.json())
             .then((data) => {
                 setChartData({
