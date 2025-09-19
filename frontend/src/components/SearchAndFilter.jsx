@@ -172,6 +172,13 @@ const SearchAndFilter = () => {
                                         >
                                             <Typography gutterBottom variant="h5" component="div">
                                                 {proj.acronym}
+                                                {proj.status === "SIGNED" ? (
+                                                    <span className='text-base ml-5 text-green-500'>{proj.status}</span>
+                                                ) : proj.status === "CLOSED" ? (
+                                                    <span className='text-base ml-5 text-red-500'>{proj.status}</span>
+                                                ) : (
+                                                    <span className='text-base ml-5 text-gray-500'>{proj.status}</span>
+                                                )}
                                             </Typography>
                                             <Typography gutterBottom variant="body2" component="div">
                                                 ID: {proj.id}

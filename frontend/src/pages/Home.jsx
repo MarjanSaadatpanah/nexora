@@ -6,7 +6,7 @@ import RecentlyAdded from '../components/RecentlyAdded'
 import SearchAndFilter from '../components/SearchAndFilter'
 import TopProjects from '../components/TopProjects';
 import { useContext } from 'react';
-// import Stats from '../components/stats/Stats'
+import Stats from '../components/stats/Stats'
 
 
 
@@ -15,11 +15,11 @@ const Home = () => {
     const { searchActive } = useContext(SearchContext);
 
     return (
-        <div className='w-full m-auto '>
-            {!searchActive && <Hero />}
+        <div className='w-full m-auto pt-15'>
             <Nav />
+            {!searchActive && <Hero />}
             <SearchAndFilter />
-            {/* {!searchActive && <Stats />} */}
+            {!searchActive && <Stats />}
             {!searchActive && <RecentlyAdded />}
             {!searchActive && <TopProjects />}
             {!searchActive && <ExpieringSoon />}
