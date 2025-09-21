@@ -24,7 +24,7 @@ const Organization = ({ organization }) => {
 
   const InfoBox = ({ lable, value, icon: Icon }) => {
     return (
-      <div className='flex border-b-2 border-white pb-2'>
+      <div className='flex border-b-2 border-white py-2 my-3'>
         <label className="flex text-sm text-gray-900 w-28">
           {Icon && <Icon className='mr-2 mt-1' />}
           {lable}:
@@ -37,31 +37,13 @@ const Organization = ({ organization }) => {
   };
 
   return (
-    <label className="inline-flex items-center justify-between text-gray-900 w-full py-3 border-t-2 border-t-gray-200 hover:bg-slate-100">
-      <div className="block w-full">
+    <label className="inline-flex  items-center justify-between text-gray-900 w-full pt-3 border-t-2 border-t-gray-200 hover:bg-slate-100">
+      <div className="block w-full ">
         <div className='flex w-full'>
-          <div className="w-3/5 ml-4 pr-3">
-            <div className="text-base font-semibold">
-              <span>{organization ? organization.name : 'Not Defined'}</span>
+          <div className="w-3/6 ml-4 pr-2">
+            <div className="text-sm font-semibold">
+              <span>{organization ? organization.name.slice(0, 55) : 'Not Defined'}</span>
               {organization.SME === "true" && <span className='bg-green-600 text-white ml-3 rounded-full text-sm py-1'>SME</span>}
-
-              <Tooltip
-                title="Number of the Involving Project"
-                placement="right-start"
-                arrow
-                slots={{
-                  transition: Fade,
-                }}
-                slotProps={{
-                  transition: { timeout: 600 },
-                }}
-              >
-                <IconButton>
-                  <span className='ml-5 inline-flex items-center justify-center mb-1 w-7 h-7 text-xs font-bold text-blue-500 border-2 border-blue-500 rounded-full'>
-                    {organization.project_count}
-                  </span>
-                </IconButton>
-              </Tooltip>
             </div>
             <div className="mt-1 flex">
 
@@ -80,11 +62,30 @@ const Organization = ({ organization }) => {
               )}
             </div>
           </div>
-          <div className="w-1/5">
-            <p>Net EU Contribution: <br /> {organization.netEcContribution} </p>
+          <div className="w-1/6 text-sm">
+            <Tooltip
+              title="Number of the Projects"
+              placement="right-start"
+              arrow
+              slots={{
+                transition: Fade,
+              }}
+              slotProps={{
+                transition: { timeout: 600 },
+              }}
+            >
+              <IconButton>
+                <span className='ml-1 sm:ml-4 inline-flex items-center justify-center mb-1 w-7 h-7 text-xs font-bold text-blue-500 border-2 border-blue-500 rounded-full'>
+                  {organization.project_count}
+                </span>
+              </IconButton>
+            </Tooltip>
           </div>
-          <div className="w-1/5 ml-2">
-            <p>Total Contributions: <br /> {organization.ecContribution}</p>
+          <div className="w-1/6 text-xs sm:text-sm">
+            <p>Net EU Contribution: <br /> <span className='font-semibold'> {organization.netEcContribution} </span></p>
+          </div>
+          <div className="w-1/6 text-xs sm:text-sm ml-2">
+            <p>Total Contributions: <br /> <span className='font-semibold'> {organization.ecContribution}</span></p>
           </div>
           <div className="ml-2">
             <button onClick={cordinatorView} className="hover:font-bold px-5 inline-flex items-center cursor-pointer">
@@ -97,18 +98,22 @@ const Organization = ({ organization }) => {
 
         {/* show details of organization */}
         {coordinatorExpanded && organization && (
-          <motion.div className='flex bg-gray-200 p-3 rounded-xl mt-5'>
-            <div class="grid gap-4 mt-1 mx-2 sm:grid-cols-2 w-11/12">
-              <InfoBox lable="Address" icon={MdLocationPin} value={organization.street + ", " + organization.postCode + ", " + organization.city} />
-              <InfoBox lable="Vat Number" icon={FaPercent} value={organization.vatNumber} />
-              <InfoBox lable="Website" icon={TbWorldWww} value={organization.organizationURL} />
-              <InfoBox lable="Short Name" icon={FaAdn} value={organization.shortName} />
-              <InfoBox lable="LinkedIn" icon={FaLinkedin} />
-              <InfoBox lable="NUTS Code" icon={FaBarcode} value={organization.nutsCode} />
-              <InfoBox lable="Answerable" icon={MdPerson} />
-              <InfoBox lable="Role" icon={RiAdminFill} />
-              <InfoBox lable="Phone" icon={FaPhoneAlt} />
-              <InfoBox lable="Email" icon={MdEmail} />
+          <motion.div className='flex bg-gray-200 p-3 rounded-bl-lg rounded-br-lg mt-5'>
+            <div class="lg:flex mt-1 mx-2  w-11/12">
+              <div className='lg:w-1/2'>
+                <InfoBox lable="Role" icon={RiAdminFill} value={organization.role} />
+                <InfoBox lable="Address" icon={MdLocationPin} value={organization.street + ", " + organization.postCode + ", " + organization.city} />
+                <InfoBox lable="Website" icon={TbWorldWww} value={organization.organizationURL} />
+                <InfoBox lable="Short Name" icon={FaAdn} value={organization.shortName} />
+                <InfoBox lable="LinkedIn" icon={FaLinkedin} />
+              </div>
+              <div className='lg:w-1/2'>
+                <InfoBox lable="NUTS Code" icon={FaBarcode} value={organization.nutsCode} />
+                <InfoBox lable="Vat Number" icon={FaPercent} value={organization.vatNumber} />
+                <InfoBox lable="Answerable" icon={MdPerson} />
+                <InfoBox lable="Phone" icon={FaPhoneAlt} />
+                <InfoBox lable="Email" icon={MdEmail} />
+              </div>
             </div>
             <ContactsSpeedDial className="w-1/12" />
           </motion.div>

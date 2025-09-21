@@ -21,8 +21,6 @@ export const SearchProjects = async (query, page = 1, perPage = 10, filters = {}
         }
     });
 
-    console.log('Cleaned SearchProjects Request:', params);
-
     const res = await client.get('/projects/search', { params });
     return res.data;
 };
@@ -32,20 +30,8 @@ export const SearchProjects = async (query, page = 1, perPage = 10, filters = {}
 
 export const GetProjectById = async (id) => {
     const res = await client.get(`projects/${id}`);
-    console.log("projects and organizations from single: ", res.data)
     return res.data;
 };
-
-// // for collection the topics of projects to craete a filter on topics
-// export async function GetTopics() {
-//     try {
-//         const { data } = await client.get('/projects/topics');
-//         console.log('topics:', data)
-//         return data;
-//     } catch (error) {
-//         console.log("error from get topics")
-//     }
-// }
 
 
 export async function AllProjects() {
@@ -64,9 +50,18 @@ export async function TopTenProjects() {
 }
 
 export async function ExpiredProjects() {
-    const { data } = await client.get('projects/expiring');
+    const { data } = await client.get('projects/closed');
     return data;
 }
 
+export async function WillExpiredProjects() {
+    const { data } = await client.get('projects/expiring_soon');
+    return data;
+}
+
+export async function StatisticsSummary() {
+    const { data } = await client.get('projects/statistics/summary');
+    return data;
+}
 
 

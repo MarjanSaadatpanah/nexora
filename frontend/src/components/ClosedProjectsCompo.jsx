@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import Cards from './Cards';
-import HourglassDisabledIcon from '@mui/icons-material/HourglassDisabled';
-import { WillExpiredProjects } from '../services/api';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
+import { ExpiredProjects } from '../services/api';
 
-const ExpieringSoon = ({ all }) => {
+const ClosedProjectsCompo = ({ all }) => {
 
     const [expiredProjetcts, setExpiredProjetcts] = useState([]);
 
     useEffect(() => {
-        WillExpiredProjects().then(data => {
+        ExpiredProjects().then(data => {
             const updated = data.map(p => ({
                 ...p,
                 isExpired: new Date(p.end_date) < new Date()
@@ -19,8 +19,8 @@ const ExpieringSoon = ({ all }) => {
 
     return (
         <div className='mt-20'>
-            <h1 className='text-3xl mb-2'><HourglassDisabledIcon className='mr-3 mb-1' /> Expiering Soon:</h1>
-            <p className="max-w-2xl font-light text-gray-500 lg:mb-8 md:text-lg lg:text-xl 400"> The projects ending in up comming months</p>
+            <h1 className='text-3xl mb-2'><EventBusyIcon className='mr-3 mb-1' /> Closed Projects:</h1>
+            <p className="max-w-2xl font-light text-gray-500 lg:mb-8 md:text-lg lg:text-xl 400"> List of closed projects </p>
             <div className="grid gap-x-8 gap-y-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {all ?
                     expiredProjetcts.map((project) => (
@@ -36,4 +36,4 @@ const ExpieringSoon = ({ all }) => {
     )
 }
 
-export default ExpieringSoon
+export default ClosedProjectsCompo

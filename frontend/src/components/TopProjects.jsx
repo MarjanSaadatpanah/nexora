@@ -15,6 +15,7 @@ const TopProjects = () => {
             setTopTenProjects(updated);
         });
     }, []);
+
     return (
         <div className='mt-20'>
             <h1 className='text-3xl mb-2'><MonetizationOn className='mr-3' /> Top Projects:</h1>

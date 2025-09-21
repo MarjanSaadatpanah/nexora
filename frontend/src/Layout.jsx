@@ -1,16 +1,18 @@
 import React from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Nav from './components/Nav';
+import Footer from './components/Footer';
 
 const Layout = () => {
-    const location = useLocation();
-    const isHomePage = location.pathname === '/';
+
     return (
         <>
-            <div className='lg:w-9/12 w-11/12 m-auto mt-5'>
-                {!isHomePage && <Nav />}
-
-                <Outlet />
+            <div>
+                <Nav />
+                <div className='lg:w-9/12 w-full m-auto mt-5 '>
+                    <Outlet />
+                </div>
+                <Footer />
             </div>
         </>
     )

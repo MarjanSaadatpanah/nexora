@@ -10,7 +10,6 @@ import { ClockLoader } from 'react-spinners';
 
 import Card from '@mui/material/Card';
 import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
@@ -32,18 +31,26 @@ const SearchAndFilter = () => {
 
     const navigate = useNavigate();
 
+    // Helper function to check if filters are active
+    const hasActiveFilters = (filtersObj) => {
+        return Object.values(filtersObj).some(value =>
+            value !== undefined && value !== null && value !== ""
+        );
+    };
+
     // --- FETCH PROJECTS ---
     const fetchProjects = async (query, pageNumber = 1, append = false) => {
         if (append) setLoadingMore(true);
         else setIsLoading(true);
 
         try {
-            const response = await SearchProjects(query, pageNumber, 10, filters); // pass filters
+            const response = await SearchProjects(query, pageNumber, 10, filters);
             setProjectList(prev =>
                 append ? [...prev, ...response.projects] : response.projects
             );
             setHasMore(pageNumber < response.pages);
             setPage(pageNumber);
+
         } catch (error) {
             console.error('Search error:', error);
             setProjectList([]);
@@ -53,8 +60,13 @@ const SearchAndFilter = () => {
         }
     };
 
+    // Trigger search when search term or filters change
     useEffect(() => {
-        if (!searchTerm.trim()) {
+        const trimmedSearchTerm = searchTerm.trim();
+        const hasFilters = hasActiveFilters(filters);
+
+        // If there's no search term and no filters, don't search
+        if (!trimmedSearchTerm && !hasFilters) {
             if (debounceRef.current) clearTimeout(debounceRef.current);
             setProjectList([]);
             setHasMore(false);
@@ -65,25 +77,36 @@ const SearchAndFilter = () => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
 
         debounceRef.current = setTimeout(() => {
-            fetchProjects(searchTerm, 1, false);
+            // Use the actual search term, even if it's empty (for filter-only searches)
+            fetchProjects(trimmedSearchTerm, 1, false);
             setSearchActive(true);
         }, 300);
 
         return () => clearTimeout(debounceRef.current);
-    }, [searchTerm, filters]);
+    }, [searchTerm, filters]); // Make sure filters is properly tracked
 
     const handleSearchChange = (e) => {
         setSearchTerm(e.target.value);
-        navigate('/')
+        navigate('/');
     };
 
     const handleApplyFilters = (newFilters) => {
         setFilters(newFilters);
         setFilterVisible(false);
+
+        // The useEffect will handle the search automatically
+        // No need to manually trigger fetchProjects here
     };
 
     const handleLoadMore = () => {
-        fetchProjects(searchTerm, page + 1, true);
+        const trimmedSearchTerm = searchTerm.trim();
+        fetchProjects(trimmedSearchTerm, page + 1, true);
+    };
+
+    // Clear all filters
+    const handleClearAllFilters = () => {
+        setFilters({});
+        // The useEffect will handle clearing results automatically
     };
 
     return (
@@ -122,38 +145,37 @@ const SearchAndFilter = () => {
             />
 
             {/* Active Filter Summary */}
-            {Object.entries(filters)
-                .filter(([_, value]) => value !== undefined && value !== null && value !== "")
-                .length > 0 && (
-                    <div className="flex flex-wrap gap-2 m-2">
-                        {Object.entries(filters)
-                            .filter(([_, value]) => value !== undefined && value !== null && value !== "")
-                            .map(([key, value]) => (
-                                <span
-                                    key={key}
-                                    className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded border border-blue-200 flex items-center gap-1"
+            {hasActiveFilters(filters) && (
+                <div className="flex flex-wrap gap-2 m-2">
+                    {Object.entries(filters)
+                        .filter(([_, value]) => value !== undefined && value !== null && value !== "")
+                        .map(([key, value]) => (
+                            <span
+                                key={key}
+                                className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded border border-blue-200 flex items-center gap-1"
+                            >
+                                {key}: {value}
+                                <button
+                                    onClick={() => {
+                                        const newFilters = { ...filters };
+                                        delete newFilters[key];
+                                        setFilters(newFilters);
+                                        // The useEffect will handle the search update automatically
+                                    }}
+                                    className="text-red-500 font-bold text-xs"
                                 >
-                                    {key}: {value}
-                                    <button
-                                        onClick={() => setFilters(prev => {
-                                            const newFilters = { ...prev };
-                                            delete newFilters[key];
-                                            return newFilters;
-                                        })}
-                                        className="text-red-500 font-bold text-xs"
-                                    >
-                                        ×
-                                    </button>
-                                </span>
-                            ))}
-                        <button
-                            onClick={() => setFilters({})}
-                            className="text-red-500 text-xs underline"
-                        >
-                            Clear All
-                        </button>
-                    </div>
-                )}
+                                    ×
+                                </button>
+                            </span>
+                        ))}
+                    <button
+                        onClick={handleClearAllFilters}
+                        className="text-red-500 text-xs underline"
+                    >
+                        Clear All
+                    </button>
+                </div>
+            )}
 
             {/* Search Results */}
             {isHomePage && (
@@ -193,8 +215,11 @@ const SearchAndFilter = () => {
                                         <Box sx={{ p: 1 }}>
                                             <Stack direction="row" spacing={1} flexWrap="wrap">
                                                 {proj.keywords?.split(", ").map((keyw, index) => (
-                                                    <Chip key={index} color="primary" label={keyw} size="small" sx={{ fontSize: '0.6rem' }} />
+                                                    <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                                        {keyw}
+                                                    </span>
                                                 ))}
+
                                             </Stack>
                                         </Box>
                                     )}
@@ -203,6 +228,20 @@ const SearchAndFilter = () => {
                         </li>
                     ))}
                 </ul>
+            )}
+
+            {/* No results message */}
+            {isHomePage && searchTerm.trim() === '' && !hasActiveFilters(filters) && projectList.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                    Enter a search term or apply filters to see results
+                </div>
+            )}
+
+            {/* No results found message */}
+            {isHomePage && (searchTerm.trim() !== '' || hasActiveFilters(filters)) && projectList.length === 0 && !isLoading && (
+                <div className="text-center py-8 text-gray-500">
+                    No projects found matching your criteria
+                </div>
             )}
 
             {/* Pagination / Load More */}

@@ -1,31 +1,32 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const Cards = ({ isExpired, title, acronym, id, eu_contribution, link, pState }) => {
+const Cards = ({ status, title, acronym, id, eu_contribution, link, project }) => {
 
     return (
-        <Link to={link} state={pState}>
-            <div className="relative flex flex-col my-3 bg-white shadow-sm border border-slate-200 rounded-lg">
+        <Link to={link} state={{ project }} >
+            <div className="relative flex flex-col my-3 hover:my-2 bg-white shadow-sm border border-slate-200 hover:border-slate-400 rounded-lg">
+                {status === "SIGNED" ? (
+                    <div className='text-xs mb-2 rounded-tl rounded-br-lg shadow text-white w-20 text-center py-1 bg-green-500'>{status}</div>
+                ) : status === "CLOSED" ? (
+                    <div className='text-xs mb-2 rounded-tl rounded-br-lg shadow text-white w-20 text-center py-1 bg-red-500'>{status}</div>
+                ) : (
+                    <div className='text-xs mb-2 rounded-tl rounded-br-lg shadow text-white w-20 text-center py-1 bg-gray-500'>{status}</div>
+                )}
                 <div className="p-4">
-                    {isExpired ? (
-                        <div className="mb-4 rounded-lg bg-orange-500 py-0.5 px-2.5 border border-transparent text-xs text-white transition-all shadow-sm w-20 text-center">Expired</div>
-                    ) : (
-                        <div className="mb-4 rounded-lg bg-green-500 py-0.5 px-2.5 border border-transparent text-xs text-white transition-all shadow-sm w-20 text-center">On Going</div>
-                    )}
+
+
+
+
                     <span className="text-slate-800 font-semibold">{acronym}</span>
 
-                    <p className="text-slate-800 leading-normal font-light">
+                    <p className="text-slate-800 leading-normal font-light line-clamp-4 h-24">
                         {title}
                     </p>
                 </div>
 
                 <div className="flex items-center justify-between p-4">
                     <div className="flex items-center">
-                        {/* <img
-                            alt="Tania Andrew"
-                            src="https://wallpapercave.com/wp/wp4071633.jpg"
-                            className="relative inline-block h-8 w-8 rounded-full"
-                        /> */}
                         <div className="flex flex-col text-sm">
                             <div className="mb-2 text-slate-800 text-base">
                                 EU Contribution: <span className='text-slate-800 font-semibold'>{eu_contribution?.toLocaleString('en-US', { style: 'currency', currency: 'EUR' })}</span>
@@ -42,3 +43,4 @@ const Cards = ({ isExpired, title, acronym, id, eu_contribution, link, pState })
 }
 
 export default Cards
+

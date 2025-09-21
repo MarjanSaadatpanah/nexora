@@ -31,7 +31,7 @@ export default function EUContributionPerCountry() {
             .then((res) => res.json())
             .then((data) => {
                 setChartData({
-                    labels: data.map((item) => getName(item.country) || "Unknown"),
+                    labels: data.map((item) => getName(item.country)?.slice(0, 10) || "Unknown"),
                     datasets: [
                         {
                             data: data.map((item) => item.total_eu_contribution),
@@ -76,9 +76,6 @@ export default function EUContributionPerCountry() {
 
     return (
         <div className="bg-white p-6 w-full max-w-6xl mx-auto">
-            {/* <h2 className="text-xl font-bold text-center mb-6 text-gray-800">
-                EU Contribution per Country
-            </h2> */}
             <div className="h-96">
                 <Bar
                     data={chartData}
@@ -128,7 +125,7 @@ export default function EUContributionPerCountry() {
                                 },
                                 title: {
                                     display: true,
-                                    text: "Countries",
+                                    text: "Data showing the contribution amounts from EU countries",
                                     font: {
                                         weight: "bold",
                                         size: 12
@@ -147,7 +144,7 @@ export default function EUContributionPerCountry() {
                 />
             </div>
             <div className="mt-4 text-sm text-gray-500 text-center">
-                Data showing the contribution amounts from EU member countries
+
             </div>
         </div>
     );

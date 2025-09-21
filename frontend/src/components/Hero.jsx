@@ -1,5 +1,6 @@
 import React from 'react'
 import logo from '../../src/assets/images/nexora.png';
+import StatisticsSummaryComp from './stats/StatisticsSummaryComp';
 
 const Hero = () => {
     return (
@@ -16,13 +17,7 @@ const Hero = () => {
                         Discover and act on private market activity with <br /> predictive company intelligence.
                     </p>
                 </div>
-                <div>
-                    <p>Number of the all Projects: ???</p>
-                    <p>Number of the signed Projects: ???</p>
-                    <p>Number of the terminated Projects: ???</p>
-                    <p>Number of the closed Projects: ???</p>
-                    <p>or some useful statistics !!!!</p>
-                </div>
+                <StatisticsSummaryComp />
             </div>
         </div>
 

@@ -1,84 +1,236 @@
-import React from 'react'
-import { VscRobot } from "react-icons/vsc";
+import { useState, useEffect } from 'react';
+import { VscRobot, VscLaw, VscWorkspaceTrusted } from "react-icons/vsc";
+import { FaCalendarCheck, FaTag, FaGlobe, FaEuroSign, FaCreditCard, FaLightbulb, FaClock } from "react-icons/fa";
+import { MdEventNote } from "react-icons/md";
 
 const Project = ({ project }) => {
+    const [viewDetails, setViewDetails] = useState(false);
+    const [remainingDays, setRemainingDays] = useState(null);
 
-    function Li({ elem, value }) {
-        return (
-            <li>
-                <label className="inline-flex items-center justify-between text-gray-900 w-full   rounded  peer-checked:border-green-400  peer-checked:text-green-400  ">
-                    <div className="block">
-                        <div className='flex'>
-                            <div class="w-full">
-                                <div class="text-sm">
-                                    <p>{elem}: <span className='font-medium'>{value}</span></p>
+    useEffect(() => {
+        if (project.endDate) {
+            calculateRemainingDays(project.endDate);
+        }
+    }, [project.endDate]);
+
+    const calculateRemainingDays = (endDate) => {
+        const today = new Date();
+        const end = new Date(endDate);
+        const diffTime = end - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        setRemainingDays(diffDays);
+    };
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case "SIGNED":
+                return "bg-green-100 text-green-800";
+            case "CLOSED":
+                return "bg-red-100 text-red-800";
+            case "ONGOING":
+                return "bg-blue-100 text-blue-800";
+            default:
+                return "bg-gray-100 text-gray-800";
+        }
+    };
+
+    const formatCurrency = (amount) => {
+        if (!amount) return "N/A";
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'EUR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
+    };
+
+    const InfoCard = ({ title, value, icon, className = "" }) => (
+        <div className={` p-4 rounded-lg shadow border border-gray-100 ${className}`}>
+            <div className="flex items-center mb-2">
+                <span className="text-gray-500 mr-2">{icon}</span>
+                <span className="text-sm font-medium text-gray-600">{title}</span>
+            </div>
+            <p className="text-base font-semibold text-gray-900">{value || "Not Defined"}</p>
+        </div>
+    );
+
+    const DetailItem = ({ icon, label, value }) => (
+        <div className="flex items-start py-3 border-b border-gray-100 last:border-b-0">
+            <span className="text-gray-400 mr-3 mt-1">{icon}</span>
+            <div className="flex-1 text-sm">
+                <p className="text-gray-600">{label}</p>
+                <p className="text-gray-900">{value || "Not Defined"}</p>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="bg-white rounded-xl shadow-md overflow-hidden ">
+            {/* Header Section */}
+            <div className="p-6 ">
+                <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                        <h1 className="text-2xl text-gray-900 mb-2">{project.title}</h1>
+
+                        <div className="flex justify-between mt-7">
+                            <div>
+                                <span className="inline-flex items-center px-3 py-1 rounded mr-2 text-xs font-medium bg-blue-100 text-blue-800">
+                                    {project.acronym}
+                                </span>
+                                <span className={`inline-flex items-center px-3 py-1 rounded mr-2 text-xs font-medium ${getStatusColor(project.status)}`}>
+                                    {project.status}
+                                </span>
+                                {remainingDays !== null && (
+                                    <span className={`inline-flex items-center px-3 py-1 rounded mr-2 text-xs font-medium ${remainingDays < 0
+                                        ? "bg-red-100 text-red-800"
+                                        : remainingDays < 30
+                                            ? "bg-yellow-100 text-yellow-800"
+                                            : "bg-green-100 text-green-800"
+                                        }`}>
+                                        <FaClock className="mr-1" />
+                                        {remainingDays < 0 ? `Ended ${Math.abs(remainingDays)} days ago` : `${remainingDays} days remaining`}
+                                    </span>
+                                )}
+                            </div>
+                            <span className=" inline-flex items-center px-3 py-1 rounded-full text-sm">
+                                ID: {project.id}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Key Metrics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 ">
+                <InfoCard
+                    title="Total Cost"
+                    className='bg-cyan-100'
+                    value={formatCurrency(project.totalCost)}
+                    icon={<FaEuroSign />}
+                />
+                <InfoCard
+                    title="EU Contribution"
+                    className='bg-blue-100'
+                    value={formatCurrency(project.eu_contribution || project.ecMaxContribution)}
+                    icon={<FaCreditCard />}
+                />
+                <InfoCard
+                    title="Funding Scheme"
+                    className='bg-cyan-100'
+                    value={project.fundingScheme}
+                    icon={<VscWorkspaceTrusted />}
+                />
+            </div>
+
+            {/* Details Section */}
+            <div className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <FaCalendarCheck className="mr-2 text-gray-500" />
+                            Project Timeline
+                        </h3>
+                        <DetailItem
+                            icon={<MdEventNote />}
+                            label="Start Date"
+                            value={project.startDate}
+                        />
+                        <DetailItem
+                            icon={<MdEventNote />}
+                            label="End Date"
+                            value={project.endDate}
+                        />
+                        <DetailItem
+                            icon={<FaCalendarCheck />}
+                            label="Signature Date"
+                            value={project.ecSignatureDate}
+                        />
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <FaTag className="mr-2 text-gray-500" />
+                            Project Details
+                        </h3>
+                        <DetailItem
+                            icon={<FaGlobe />}
+                            label="Programme"
+                            value={project.frameworkProgramme}
+                        />
+                        <DetailItem
+                            icon={<VscLaw />}
+                            label="Legal Basis"
+                            value={project.legalBasis}
+                        />
+                        <DetailItem
+                            icon={<FaTag />}
+                            label="Topics"
+                            value={project.topics}
+                        />
+                        {project.keywords && (
+                            <div className="py-3 border-b border-gray-100 last:border-b-0">
+                                <p className="text-sm font-medium text-gray-600 mb-2">Keywords</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {project.keywords.split(",").map((keyword, index) => (
+                                        <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                            {keyword.trim()}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </label>
-            </li>
-        )
-    }
-    function LabelBox({ elem, value }) {
-        return (
-            <label className="inline-flex mb-1 items-center justify-between text-gray-900 w-full  peer-checked:border-green-400  peer-checked:text-green-400  ">
-                <div className="block">
-                    <div className='flex'>
-                        <div class="w-full">
-                            <div class="text-base">
-                                <p>
-                                    <span className='text-sm'>{elem}: </span>
-                                    {value}
-                                </p>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
-            </label>
-        )
-    }
-    return (
-        <label className="inline-flex items-center pt-4 justify-between text-gray-900 w-full pb-5 ">
-            <div class="block">
-                <div className='flex'>
-                    <div class="w-full">
-                        <div>
-                            <p class="text-3xl mb-2 pr-16">{project.title} </p>
-                            <h4 className="text-base text-blue-700">{project.acronym}</h4>
-                            <h4 className="text-base mt-6 text-blue-900">Statuse: {project.status}</h4>
-                            <h4 className="text-base text-blue-900">Remaining Days: {project.remaining_days}</h4>
-                        </div>
 
-                        <ul className="grid gap-x-10 gap-y-2 grid-cols-2 mt-4">
-                            <Li elem="Topics" value={project.topics} />
-                            <Li elem="Signature Date" value={project.ecSignatureDate} />
-                            <Li elem="Programme" value={project.frameworkProgramme} />
-                            <Li elem="Start Date" value={project.startDate} />
-                            <Li elem="Legal Basis" value={project.legalBasis} />
-                            <Li elem="End Date" value={project.endDate} />
+                {/* Objective Section */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <FaLightbulb className="mr-2 text-gray-500" />
+                        Project Objective
+                        <button
+                            className="ml-auto flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                            <VscRobot className="mr-1" />
+                            AI Summary
+                        </button>
+                    </h3>
 
-                        </ul>
-
-                        <div className='my-9'>
-                            <LabelBox elem="Total Cost" value={project.totalCost} />
-                            <LabelBox elem="EU Contribution" value={project.ecMaxContribution + " €"} />
-                        </div>
-
-                        <div class="flex items-center space-x-4">
-                            <h4 className='text-sm'>Objective:</h4>
-                            <button
-                                className="flex text-blue-500 hover:text-blue-700 cursor-pointer">
-                                <VscRobot className="text-lg mr-1" />
-                                <span className='text-sm'>Make a Summary with AI</span>
-                            </button>
-                        </div>
-                        <p>{project.objective}</p>
+                    <div className="text-gray-700">
+                        {!viewDetails ? (
+                            <p>
+                                {project.objective.slice(0, 280)}
+                                {project.objective.length > 280 && (
+                                    <button
+                                        className="text-blue-600 hover:text-blue-800 font-medium ml-1"
+                                        onClick={() => setViewDetails(true)}
+                                    >
+                                        ...Read more
+                                    </button>
+                                )}
+                            </p>
+                        ) : (
+                            <p>
+                                {project.objective}
+                                <button
+                                    className="text-blue-600 hover:text-blue-800 font-medium ml-1"
+                                    onClick={() => setViewDetails(false)}
+                                >
+                                    Show less
+                                </button>
+                            </p>
+                        )}
                     </div>
                 </div>
-            </div >
-        </label >
-    )
-}
 
-export default Project
+                {/* Additional Information Suggestions */}
+                {project.rcn && (
+                    <div className="mt-4 text-sm text-gray-500">
+                        <p>RCN: {project.rcn}</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default Project;

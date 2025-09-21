@@ -5,6 +5,10 @@ from pymongo import MongoClient, ASCENDING, DESCENDING
 import os
 from datetime import datetime
 
+# expiring-soon
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+
 projects_bp = Blueprint("projects", __name__)
 
 # --- MongoDB Setup ---
@@ -49,6 +53,59 @@ def _parse_date(val):
     except Exception:
         return None
 
+
+def serialize_doc(doc):
+    """Convert ObjectId to string for JSON."""
+    doc = dict(doc)
+    if "_id" in doc:
+        doc["_id"] = str(doc["_id"])
+    return doc
+
+
+def convert_objectid(doc):
+    """Convert all ObjectId fields in a document to strings."""
+    for k, v in doc.items():
+        if isinstance(v, ObjectId):
+            doc[k] = str(v)
+    return doc
+
+
+def enrich_project_with_organizations(project_doc):
+    """Add organization data to a project document, excluding the coordinator from organizations list."""
+    project_id = project_doc["id"]
+
+    # Fetch related organizations
+    organizations = []
+    coordinator = None
+
+    for org in organizations_collection.find({"projectID": project_id}):
+        org_data = serialize_doc(org)
+
+        # Count how many projects this organization participates in
+        org_data["project_count"] = organizations_collection.count_documents({
+            "organisationID": org_data["organisationID"]
+        })
+
+        # Count how many projects this organization coordinates
+        org_data["coordinator_count"] = organizations_collection.count_documents({
+            "organisationID": org_data["organisationID"],
+            "role": {"$regex": "^coordinator$", "$options": "i"}
+        })
+
+        # Check if this is the coordinator
+        if org_data.get("role", "").lower() == "coordinator":
+            coordinator = org_data
+        else:
+            organizations.append(org_data)
+
+    # Create a copy of the project document and add organization data
+    enriched_project = project_doc.copy()
+    enriched_project["coordinator"] = coordinator
+    enriched_project["organizations"] = organizations
+
+    return enriched_project
+
+
 # --- ROUTES ---
 
 
@@ -73,49 +130,122 @@ def list_projects():
 
 @projects_bp.route("/recent", methods=["GET"])
 def get_recent_projects():
-    """Return projects sorted by start date descending."""
+    """Return projects sorted by start date descending with organization data."""
     cursor = projects_collection.find({}).sort(
-        "startDate", DESCENDING).limit(9)
-    projects = [normalize_project(doc) for doc in cursor]
+        "startDate", DESCENDING).limit(15)
+
+    projects = []
+    for doc in cursor:
+        normalized = normalize_project(doc)
+        enriched = enrich_project_with_organizations(normalized)
+        projects.append(enriched)
+
     return jsonify(projects)
 
 
-@projects_bp.route("/expiring", methods=["GET"])
-def get_expiring_projects():
-    """Return projects sorted by end date ascending (closest to expiry)."""
+@projects_bp.route("/closed", methods=["GET"])
+def get_closed_projects():
+    """Return projects sorted by end date ascending (closest to expiry) with organization data."""
     cursor = projects_collection.find(
-        {"endDate": {"$ne": None}}).sort("endDate", ASCENDING).limit(9)
-    projects = [normalize_project(doc) for doc in cursor]
+        {"endDate": {"$ne": None}}).sort("endDate", ASCENDING).limit(15)
+
+    projects = []
+    for doc in cursor:
+        normalized = normalize_project(doc)
+        enriched = enrich_project_with_organizations(normalized)
+        projects.append(enriched)
+
     return jsonify(projects)
 
 
-@projects_bp.route("/top", methods=["GET"])
-def get_top_projects():
-    """Return projects with highest EU contribution."""
-    cursor = projects_collection.find({}).sort(
-        "ecMaxContribution", DESCENDING).limit(9)
-    projects = [normalize_project(doc) for doc in cursor]
+@projects_bp.route("/expiring_soon", methods=["GET"])
+def get_expiring_soon_projects():
+    """Return projects that are expiring within the next 2 months."""
+    today = datetime.now().date()
+    two_months_later = today + relativedelta(months=2)
+
+    # Format dates as strings for MongoDB comparison
+    today_str = today.isoformat()
+    two_months_later_str = two_months_later.isoformat()
+
+    # Query for projects ending within the next 2 months
+    query = {
+        "endDate": {
+            "$gte": today_str,
+            "$lte": two_months_later_str
+        }
+    }
+
+    cursor = projects_collection.find(query).sort(
+        "endDate", ASCENDING).limit(15)
+
+    projects = []
+    for doc in cursor:
+        normalized = normalize_project(doc)
+        enriched = enrich_project_with_organizations(normalized)
+        projects.append(enriched)
+
     return jsonify(projects)
 
 
-# # for collection the topics of projects to craete a filter on topics
-# @projects_bp.route("/topics", methods=["GET"])
-# def get_topics():
-#     topics = projects_collection.distinct("topics")
-#     topics = [t for t in topics if t]
-#     topics.sort()
-#     return jsonify({"topics": topics})
+# Add this to your projects.py routes
+@projects_bp.route("/statistics/summary", methods=["GET"])
+def get_project_statistics():
+    """Return summary statistics for the projects database."""
+    try:
+        # Total projects count
+        total_projects = projects_collection.count_documents({})
+
+        # Count by status
+        status_counts = {}
+        statuses = ["SIGNED", "CLOSED", "TERMINATED", "ONGOING"]
+
+        for status in statuses:
+            count = projects_collection.count_documents({"status": status})
+            status_counts[status.lower()] = count
+
+        # Total EU contribution
+        pipeline = [
+            {
+                "$group": {
+                    "_id": None,
+                    "total_contribution": {
+                        "$sum": {
+                            "$convert": {
+                                "input": "$ecMaxContribution",
+                                "to": "double",
+                                "onError": 0,
+                                "onNull": 0
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+
+        contribution_result = list(projects_collection.aggregate(pipeline))
+        total_contribution = contribution_result[0]["total_contribution"] if contribution_result else 0
+
+        # Count of participating countries (from organizations)
+        country_count = len(organizations_collection.distinct("country"))
+
+        # Count of participating organizations
+        org_count = organizations_collection.count_documents({})
+
+        return jsonify({
+            "total_projects": total_projects,
+            "status_counts": status_counts,
+            "total_contribution": total_contribution,
+            "countries_involved": country_count,
+            "organizations_count": org_count
+        })
+
+    except Exception as e:
+        print(f"Error generating statistics: {str(e)}")
+        return jsonify({"error": "Could not generate statistics"}), 500
 
 
 # search and filter result
-def serialize_doc(doc):
-    """Convert ObjectId to string for JSON."""
-    doc = dict(doc)
-    if "_id" in doc:
-        doc["_id"] = str(doc["_id"])
-    return doc
-
-
 @projects_bp.route("/search", methods=["GET"])
 def search_projects():
     """Search projects with optional filters and include organizations + coordinator."""
@@ -133,6 +263,7 @@ def search_projects():
             {"title": {"$regex": q, "$options": "i"}},
             {"acronym": {"$regex": q, "$options": "i"}},
             {"keywords": {"$regex": q, "$options": "i"}},
+            {"id": {"$regex": q, "$options": "i"}},
         ]
 
     # --- Filters ---
@@ -227,14 +358,6 @@ def search_projects():
 
 
 # single project
-def convert_objectid(doc):
-    """Convert all ObjectId fields in a document to strings."""
-    for k, v in doc.items():
-        if isinstance(v, ObjectId):
-            doc[k] = str(v)
-    return doc
-
-
 @projects_bp.route("/<project_id>", methods=["GET"])
 def get_project(project_id):
     """Return a single project with its organizations and coordinator."""
@@ -243,23 +366,6 @@ def get_project(project_id):
         return jsonify({"error": "Project not found"}), 404
 
     project = convert_objectid(project)
+    enriched = enrich_project_with_organizations(project)
 
-    organizations = list(db.organizations.find({"projectID": project_id}))
-    organizations = [convert_objectid(org) for org in organizations]
-
-    # Find coordinator
-    coordinator = next(
-        (org for org in organizations if org.get(
-            "role", "").lower() == "coordinator"),
-        None
-    )
-
-    project_data = {
-        **project,
-        "coordinator": coordinator
-    }
-
-    return jsonify({
-        "project": project_data,
-        "organizations": organizations
-    })
+    return jsonify(enriched)

@@ -10,9 +10,9 @@ import SpeedDialAction from '@mui/material/SpeedDialAction';
 import HomeIcon from '@mui/icons-material/Home';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
-import AccessTimeFilledIcon from '@mui/icons-material/AccessTimeFilled';
-import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
-import DoDisturbIcon from '@mui/icons-material/DoDisturb';
+import NewReleasesIcon from '@mui/icons-material/NewReleases';
+import HourglassDisabledIcon from '@mui/icons-material/HourglassDisabled';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
 
 import Tooltip from '@mui/material/Tooltip';
 import Fade from '@mui/material/Fade';
@@ -23,9 +23,9 @@ const actions = [
     { icon: <HomeIcon />, name: 'Home', route: '/' },
     { icon: <BarChartIcon />, name: 'Statistics', route: '/stats' },
     { icon: <CorporateFareIcon />, name: 'Organizations', route: '/all-projects' },
-    { icon: <AccessTimeFilledIcon />, name: 'Recently Added', route: '/recent' },
-    { icon: <MonetizationOnIcon />, name: 'Top Funded', route: '/top' },
-    { icon: <DoDisturbIcon />, name: 'Expiring', route: '/expiring' }
+    { icon: <NewReleasesIcon />, name: 'Recently Added Projects', route: '/recent' },
+    { icon: <HourglassDisabledIcon />, name: 'Expiring Projects', route: '/expiring' },
+    { icon: <EventBusyIcon />, name: 'Closed Projects', route: '/closed' }
 ];
 
 export default function Category() {
@@ -56,15 +56,15 @@ export default function Category() {
 
     return (
         <>
-            <div className="flex justify-between py-3 w-9/12">
+            <div className="flex justify-between py-3 px-9" >
                 <Link to="/" onClick={() => { setSearchTerm('') }} className='text-3xl text-gray-700 hover:text-blue-600 cursor-pointer'>NEXORA</Link>
                 <div className='pt-2 hidden md:flex'>
                     <MenuButton link="/" title="Home" icon={HomeIcon} />
                     <MenuButton link="/all-projects" title="Organizations" icon={CorporateFareIcon} />
                     <MenuButton link="/stats" title="Statistics" icon={BarChartIcon} />
-                    <MenuButton link="/recent" title="New Projects" icon={AccessTimeFilledIcon} />
-                    <MenuButton link="/top" title="Top Projects" icon={MonetizationOnIcon} />
-                    <MenuButton link="/expiring" title="Expiring Projects" icon={DoDisturbIcon} />
+                    <MenuButton link="/recent" title="New Projects" icon={NewReleasesIcon} />
+                    <MenuButton link="/expiring" title="Expiring Projects" icon={HourglassDisabledIcon} />
+                    <MenuButton link="/closed" title="Closed Projects" icon={EventBusyIcon} />
                 </div>
                 <div className="md:hidden flex items-center bg-amber-50 fixed right-7">
 
