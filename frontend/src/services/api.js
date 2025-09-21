@@ -1,4 +1,5 @@
-import axios from 'axios'
+import axios from 'axios';
+
 const client = axios.create({
     baseURL: 'http://localhost:5000/api/'
 })
@@ -20,13 +21,9 @@ export const SearchProjects = async (query, page = 1, perPage = 10, filters = {}
         }
     });
 
-    console.log('Cleaned SearchProjects Request:', params);
-
     const res = await client.get('/projects/search', { params });
-    console.log('SearchProjects Response:', res.data);
     return res.data;
 };
-
 
 
 
@@ -35,6 +32,7 @@ export const GetProjectById = async (id) => {
     const res = await client.get(`projects/${id}`);
     return res.data;
 };
+
 
 export async function AllProjects() {
     const { data } = await client.get('projects');
@@ -52,9 +50,18 @@ export async function TopTenProjects() {
 }
 
 export async function ExpiredProjects() {
-    const { data } = await client.get('projects/expiring');
+    const { data } = await client.get('projects/closed');
     return data;
 }
 
+export async function WillExpiredProjects() {
+    const { data } = await client.get('projects/expiring_soon');
+    return data;
+}
+
+export async function StatisticsSummary() {
+    const { data } = await client.get('projects/statistics/summary');
+    return data;
+}
 
 

@@ -39,12 +39,25 @@ def read_csv_from_zip(zip_bytes, filename_prefix):
 
 
 def clean_document(doc: dict) -> dict:
-    """Remove invalid keys (None) and strip whitespace."""
+    """Remove invalid keys (None), strip whitespace, and normalize numeric fields."""
     cleaned = {}
     for k, v in doc.items():
         if k is None:
             continue
-        cleaned[k.strip()] = v.strip() if isinstance(v, str) else v
+
+        key = k.strip()
+        value = v.strip() if isinstance(v, str) else v
+
+        # Convert ecMaxContribution and totalCost to float if possible
+        if key in ["ecMaxContribution", "totalCost"] and isinstance(value, str):
+            try:
+                # Replace comma with dot (e.g., "226276,8" -> "226276.8")
+                cleaned[key] = float(value.replace(",", "."))
+            except ValueError:
+                cleaned[key] = 0.0  # fallback if empty or invalid
+        else:
+            cleaned[key] = value
+
     return cleaned
 
 

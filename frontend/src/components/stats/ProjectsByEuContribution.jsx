@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Bar } from "react-chartjs-2";
 import {
     Chart as ChartJS,
@@ -11,67 +11,196 @@ import {
     BarElement
 } from "chart.js";
 import { ClipLoader } from "react-spinners";
+import ChartCache from "../../utils/ChartCache";
 
-ChartJS.register(
-    Title,
-    Tooltip,
-    Legend,
-    ArcElement,
-    CategoryScale,
-    LinearScale,
-    BarElement
-);
+// Check if Chart.js is already registered to avoid duplicate registration
+let chartJsRegistered = false;
 
-export default function ProjectsByEuContribution() {
+export default React.memo(function ProjectsByEuContribution() {
     const [chartData, setChartData] = useState(null);
-    const [rawData, setRawData] = useState([]); // Store the raw data for tooltips
+    const [rawData, setRawData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
+    // Register Chart.js components once
     useEffect(() => {
-        fetch("http://localhost:5000/stats/top_projects_by_eu_contribution")
-            .then((res) => res.json())
-            .then((data) => {
-                setRawData(data); // Store the raw data
-                setChartData({
-                    labels: data.map((item) => item.acronym || "Unknown"),
-                    datasets: [
-                        {
-                            data: data.map((item) => item.eu_contribution),
-                            backgroundColor: [
-                                "#6DAEDB", // Medium blue
-                                "#77DD77", // Medium green
-                                "#FFB347", // Peach-orange
-                                "#B19CD9", // Lavender
-                                "#FF6961", // Coral
-                                "#AEC6CF", // Light blue
-                                "#FDFD96", // Light yellow
-                                "#84B082", // Sage green
-                                "#F49AC2", // Pink
-                                "#CB99C9", // Mauve
-                            ],
-                            borderColor: "rgba(255, 255, 255, 0.8)",
-                            borderWidth: 1,
-                            borderRadius: 6,
-                            hoverBackgroundColor: [
-                                "#5A9BC8", // Darker blue
-                                "#66CC66", // Darker green
-                                "#F0A040", // Darker peach-orange
-                                "#9E8AC9", // Darker lavender
-                                "#F05959", // Darker coral
-                                "#9BB5C4", // Darker light blue
-                                "#F5F586", // Darker light yellow
-                                "#739E71", // Darker sage green
-                                "#E48AB0", // Darker pink
-                                "#BA88B8", // Darker mauve
-                            ],
-                        },
-                    ],
-                });
-            });
+        if (!chartJsRegistered) {
+            ChartJS.register(
+                Title,
+                Tooltip,
+                Legend,
+                ArcElement,
+                CategoryScale,
+                LinearScale,
+                BarElement
+            );
+            chartJsRegistered = true;
+        }
     }, []);
 
+    // Memoized colors
+    const backgroundColor = useMemo(() => [
+        "#6DAEDB", "#77DD77", "#FFB347", "#B19CD9", "#FF6961",
+        "#AEC6CF", "#FDFD96", "#84B082", "#F49AC2", "#CB99C9"
+    ], []);
+
+    const hoverBackgroundColor = useMemo(() => [
+        "#5A9BC8", "#66CC66", "#F0A040", "#9E8AC9", "#F05959",
+        "#9BB5C4", "#F5F586", "#739E71", "#E48AB0", "#BA88B8"
+    ], []);
+
+    // Memoized chart options
+    const chartOptions = useMemo(() => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'x',
+        plugins: {
+            legend: {
+                display: false,
+            },
+            tooltip: {
+                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                titleColor: "#333",
+                bodyColor: "#555",
+                borderColor: "#ddd",
+                borderWidth: 1,
+                callbacks: {
+                    title: function (tooltipItems) {
+                        return tooltipItems[0].label;
+                    },
+                    label: function (context) {
+                        const dataIndex = context.dataIndex;
+                        const projectTopic = rawData[dataIndex]?.project_topic || "No topic available";
+                        const value = `€${context.raw.toLocaleString()}`;
+                        return [
+                            `Title: ${projectTopic}`,
+                            `Contribution: ${value}`
+                        ];
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: "rgba(0, 0, 0, 0.05)",
+                },
+                ticks: {
+                    callback: function (value) {
+                        return `€${value.toLocaleString()}`;
+                    }
+                },
+                title: {
+                    display: true,
+                    text: "Contribution Amount (€)",
+                    font: {
+                        weight: "bold",
+                        size: 12
+                    }
+                }
+            },
+            x: {
+                grid: {
+                    display: false,
+                },
+                ticks: {
+                    maxRotation: 45,
+                    minRotation: 45
+                },
+                title: {
+                    display: true,
+                    text: "Projects with acronym",
+                    font: {
+                        weight: "bold",
+                        size: 12
+                    }
+                }
+            },
+        },
+        elements: {
+            bar: {
+                barPercentage: 0.7,
+                categoryPercentage: 0.8,
+            }
+        }
+    }), [rawData]);
+
+    const fetchData = useCallback(async () => {
+        const cacheKey = 'top_projects_by_eu_contribution';
+        const cachedData = ChartCache.get(cacheKey);
+
+        if (cachedData) {
+            setRawData(cachedData);
+            processChartData(cachedData);
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await fetch("http://localhost:5000/api/stats/top_projects_by_eu_contribution");
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Cache the data
+            ChartCache.set(cacheKey, data);
+
+            setRawData(data);
+            processChartData(data);
+        } catch (err) {
+            console.error("Error fetching chart data:", err);
+            setError("Failed to load chart data");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const processChartData = useCallback((data) => {
+        setChartData({
+            labels: data.map((item) => item.acronym || "Unknown"),
+            datasets: [
+                {
+                    data: data.map((item) => item.eu_contribution),
+                    backgroundColor,
+                    borderColor: "rgba(255, 255, 255, 0.8)",
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    hoverBackgroundColor,
+                },
+            ],
+        });
+    }, [backgroundColor, hoverBackgroundColor]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    if (loading) return (
+        <div className="w-full max-w-lg flex justify-center items-center h-96">
+            <ClipLoader size={50} color="#6DAEDB" />
+        </div>
+    );
+
+    if (error) return (
+        <div className="w-full max-w-lg mx-auto p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <p>{error}</p>
+            <button
+                onClick={fetchData}
+                className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+                Retry
+            </button>
+        </div>
+    );
+
     if (!chartData) return (
-        <div className="w-full max-w-lg ">
-            <ClipLoader className="w-1/2 mx-auto" />
+        <div className="w-full max-w-lg mx-auto p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+            <p>No data available for the chart.</p>
         </div>
     );
 
@@ -83,86 +212,8 @@ export default function ProjectsByEuContribution() {
             <div className="h-96 w-full">
                 <Bar
                     data={chartData}
-                    options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        indexAxis: 'x',
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                            tooltip: {
-                                backgroundColor: "rgba(255, 255, 255, 0.95)",
-                                titleColor: "#333",
-                                bodyColor: "#555",
-                                borderColor: "#ddd",
-                                borderWidth: 1,
-                                callbacks: {
-                                    title: function (tooltipItems) {
-                                        // Show acronym in the tooltip title
-                                        return tooltipItems[0].label;
-                                    },
-                                    label: function (context) {
-                                        // Get the index of the hovered item
-                                        const dataIndex = context.dataIndex;
-                                        // Get the project topic from the raw data
-                                        const projectTopic = rawData[dataIndex]?.project_topic || "No topic available";
-                                        // Format the value with Euro symbol
-                                        const value = `€${context.raw.toLocaleString()}`;
-                                        // Return both the project topic and the value
-                                        return [
-                                            `Topic: ${projectTopic}`,
-                                            `Contribution: ${value}`
-                                        ];
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: "rgba(0, 0, 0, 0.05)",
-                                },
-                                ticks: {
-                                    callback: function (value) {
-                                        return `€${value.toLocaleString()}`;
-                                    }
-                                },
-                                title: {
-                                    display: true,
-                                    text: "Contribution Amount (€)",
-                                    font: {
-                                        weight: "bold",
-                                        size: 12
-                                    }
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false,
-                                },
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                },
-                                title: {
-                                    display: true,
-                                    text: "Projects with acronym",
-                                    font: {
-                                        weight: "bold",
-                                        size: 12
-                                    }
-                                }
-                            },
-                        },
-                        elements: {
-                            bar: {
-                                barPercentage: 0.7,
-                                categoryPercentage: 0.8,
-                            }
-                        }
-                    }}
+                    options={chartOptions}
+                    redraw={false}
                 />
             </div>
             <div className="mt-4 text-sm text-gray-500 text-center">
@@ -170,4 +221,4 @@ export default function ProjectsByEuContribution() {
             </div>
         </div>
     );
-}
+});

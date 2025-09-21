@@ -27,11 +27,11 @@ export default function EUCountriesPerProject() {
     const [chartData, setChartData] = useState(null);
 
     useEffect(() => {
-        fetch("http://localhost:5000/stats/projects_by_country")
+        fetch("http://localhost:5000/api/stats/projects_by_country")
             .then((res) => res.json())
             .then((data) => {
                 setChartData({
-                    labels: data.map((item) => getName(item.country) || "Unknown"),
+                    labels: data.map((item) => getName(item.country)?.slice(0, 10) || "Unknown"),
                     datasets: [
                         {
                             data: data.map((item) => item.project_count),
@@ -128,7 +128,7 @@ export default function EUCountriesPerProject() {
                                 },
                                 title: {
                                     display: true,
-                                    text: "Countries",
+                                    text: "Data showing the number of projects for each EU countries",
                                     font: {
                                         weight: "bold",
                                         size: 12
@@ -147,7 +147,7 @@ export default function EUCountriesPerProject() {
                 />
             </div>
             <div className="mt-4 text-sm text-gray-500 text-center">
-                Data showing the number of projects for each EU member countries
+
             </div>
         </div>
     );

@@ -1,51 +1,77 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from "framer-motion";
 import { getName, getCodes } from "country-list";
 import Select from "react-select";
+import ContributionSlider from './filter/ContributionSlider';
+import { IoMdClose } from "react-icons/io";
 
 const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) => {
-    // Initialize countries from currentFilters (ISO codes as comma string)
-    const initialCountries = currentFilters?.countries
-        ? currentFilters.countries.split(",")
-        : [];
+    const [filters, setFilters] = useState({
+        programme: "",
+        status: "",
+        startDate: "",
+        endDate: "",
+        selectedCountries: [],
+        minContribution: 0,
+        maxContribution: 0
+    });
 
-    const [programme, setProgramme] = useState(currentFilters?.programme || "");
-    const [status, setStatus] = useState(currentFilters?.status || "");
-    const [minContribution, setMinContribution] = useState(currentFilters?.min_contribution || "");
-    const [maxContribution, setMaxContribution] = useState(currentFilters?.max_contribution || "");
-    const [startDate, setStartDate] = useState(currentFilters?.start_date || "");
-    const [endDate, setEndDate] = useState(currentFilters?.end_date || "");
-    const [selectedCountries, setSelectedCountries] = useState(initialCountries);
+    // Initialize with current filters or defaults
+    useEffect(() => {
+        if (currentFilters) {
+            setFilters({
+                programme: currentFilters.programme || "",
+                status: currentFilters.status || "",
+                startDate: currentFilters.start_date || "",
+                endDate: currentFilters.end_date || "",
+                selectedCountries: currentFilters.countries
+                    ? currentFilters.countries.split(",")
+                    : [],
+                minContribution: currentFilters.min_contribution || 0,
+                maxContribution: currentFilters.max_contribution || 1000000000
+            });
+        }
+    }, [currentFilters, filterVisible]);
 
-    // Build options: array of { value: ISO_code, label: country_name }
     const countryOptions = getCodes().map(code => ({
         value: code,
         label: getName(code)
     }));
 
-    // Map selected ISO codes to react-select option objects for controlled value
-    const selectedOptions = countryOptions.filter(opt => selectedCountries.includes(opt.value));
+    const selectedOptions = countryOptions.filter(opt =>
+        filters.selectedCountries.includes(opt.value)
+    );
+
+    const handleContributionChange = ({ min_contribution, max_contribution }) => {
+        setFilters(prev => ({
+            ...prev,
+            minContribution: min_contribution,
+            maxContribution: max_contribution
+        }));
+    };
 
     const handleFiltering = () => {
         onApply({
-            programme,
-            status,
-            min_contribution: minContribution,
-            max_contribution: maxContribution,
-            start_date: startDate,
-            end_date: endDate,
-            countries: selectedCountries.join(",")
+            programme: filters.programme,
+            status: filters.status,
+            min_contribution: filters.minContribution,
+            max_contribution: filters.maxContribution,
+            start_date: filters.startDate,
+            end_date: filters.endDate,
+            countries: filters.selectedCountries.join(",")
         });
     };
 
     const handleResetFiltering = () => {
-        setProgramme("");
-        setStatus("");
-        setMinContribution("");
-        setMaxContribution("");
-        setStartDate("");
-        setEndDate("");
-        setSelectedCountries([]);
+        setFilters({
+            programme: "",
+            status: "",
+            startDate: "",
+            endDate: "",
+            selectedCountries: [],
+            minContribution: 0,
+            maxContribution: 1000000000
+        });
         onApply({});
     };
 
@@ -54,120 +80,136 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
             <AnimatePresence initial={false}>
                 {filterVisible && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0 }}
-                        className="bg-blue-100 my-4 p-5 absolute top-15 right-56 w-6/12 m-auto z-[9999]"
+                        initial={{ opacity: 0, x: 300 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 300 }}
+                        transition={{ type: "spring", damping: 25 }}
+                        className="bg-white px-5 py-5 fixed border-l border-gray-200 top-0 right-0 lg:w-[420px] w-full h-screen m-auto z-50 overflow-y-auto shadow-xl"
                         key="box"
                     >
-                        {/* Programme */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium">Programme</label>
-                            <input
-                                type="text"
-                                value={programme}
-                                onChange={(e) => setProgramme(e.target.value)}
-                                className="w-full p-2 border rounded"
-                            />
+                        <div className='flex justify-between items-center mb-4'>
+                            <h2 className="text-xl font-semibold text-gray-800"></h2>
+                            <button
+                                className="text-gray-500 hover:text-gray-700  rounded-full hover:bg-gray-100"
+                                onClick={() => setFilterVisible(false)}
+                            >
+                                <IoMdClose size={20} />
+                            </button>
                         </div>
 
                         {/* Status */}
                         <div className="mb-4">
-                            <label className="block text-sm font-medium">Status</label>
+                            <label className="block text-xs text-gray-500 mb-1">Status</label>
                             <select
-                                value={status}
-                                onChange={(e) => setStatus(e.target.value)}
-                                className="w-full p-2 border rounded"
+                                value={filters.status}
+                                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="">All</option>
-                                <option value="ongoing">Ongoing</option>
-                                <option value="expired">Expired</option>
+                                <option value="">All Statuses</option>
+                                <option value="CLOSED">CLOSED</option>
+                                <option value="SIGNED">SIGNED</option>
+                                <option value="TERMINATED">TERMINATED</option>
+
                             </select>
                         </div>
 
                         {/* Countries */}
                         <div className="mb-4">
-                            <label className="block text-sm font-medium">Country</label>
+                            <label className="block text-xs text-gray-500 mb-1">Countries</label>
                             <Select
                                 isMulti
                                 options={countryOptions}
                                 value={selectedOptions}
-                                onChange={(selected) => setSelectedCountries(selected ? selected.map(s => s.value) : [])}
-                                placeholder="Search and select countries..."
+                                onChange={(selected) => setFilters({
+                                    ...filters,
+                                    selectedCountries: selected ? selected.map(s => s.value) : []
+                                })}
+                                placeholder="Select countries..."
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                                styles={{
+                                    control: (base) => ({
+                                        ...base,
+                                        minHeight: '42px',
+                                        borderColor: '#d1d5db',
+                                        '&:hover': {
+                                            borderColor: '#3b82f6'
+                                        }
+                                    })
+                                }}
                             />
                         </div>
 
                         {/* EU Contribution Range */}
-                        <div className="mb-4 flex gap-2">
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium">Min Contribution (€)</label>
-                                <input
-                                    type="number"
-                                    value={minContribution}
-                                    onChange={(e) => setMinContribution(e.target.value)}
-                                    className="w-full p-2 border rounded"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium">Max Contribution (€)</label>
-                                <input
-                                    type="number"
-                                    value={maxContribution}
-                                    onChange={(e) => setMaxContribution(e.target.value)}
-                                    className="w-full p-2 border rounded"
-                                />
-                            </div>
+                        <div className="mb-4">
+                            <ContributionSlider
+                                min={0}
+                                max={1000000000}
+                                value={[filters.minContribution, filters.maxContribution]}
+                                onChange={handleContributionChange}
+                            />
                         </div>
 
                         {/* Date Range */}
-                        <div className="mb-4 flex gap-2">
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium">Start Date</label>
-                                <input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    className="w-full p-2 border rounded"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium">End Date</label>
-                                <input
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    className="w-full p-2 border rounded"
-                                />
+                        <div className="mb-4">
+                            {/* <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label> */}
+                            <div className="space-y-2">
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">Start Date</label>
+                                    <input
+                                        type="date"
+                                        value={filters.startDate}
+                                        onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">End Date</label>
+                                    <input
+                                        type="date"
+                                        value={filters.endDate}
+                                        onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
                             </div>
                         </div>
 
                         {/* Buttons */}
-                        <div className="flex justify-end gap-2 mt-9">
-                            <motion.button
-                                className="py-2 px-4 bg-green-500 text-white rounded"
+                        <div className="mt-8 space-y-2">
+                            <button
+                                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
                                 onClick={handleFiltering}
-                                whileTap={{ y: 1 }}
                             >
-                                Apply
-                            </motion.button>
-                            <motion.button
-                                className="py-2 px-4 bg-gray-500 text-white rounded"
+                                Apply Filters
+                            </button>
+                            <button
+                                className="w-full py-2.5 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-md transition-colors"
                                 onClick={handleResetFiltering}
-                                whileTap={{ y: 1 }}
                             >
-                                Reset
-                            </motion.button>
-                            <motion.button
-                                className="py-2 px-4 bg-red-500 text-white rounded"
+                                Reset Filters
+                            </button>
+                            <button
+                                className="w-full py-2.5 border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium rounded-md transition-colors"
                                 onClick={() => setFilterVisible(false)}
-                                whileTap={{ y: 1 }}
                             >
                                 Cancel
-                            </motion.button>
+                            </button>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Backdrop */}
+            {/* {filterVisible && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black bg-opacity-50 z-40"
+                    onClick={() => setFilterVisible(false)}
+                />
+            )} */}
         </div>
     );
 };

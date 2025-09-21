@@ -1,314 +1,371 @@
 # app/routes/projects.py
+from bson import ObjectId
 from flask import Blueprint, jsonify, request
-from app.models.project import Project
-from app.models.project_organization import ProjectOrganization
-from app.models.organization import Organization
-from app.extensions import db
-from datetime import date
-from sqlalchemy import func
+from pymongo import MongoClient, ASCENDING, DESCENDING
+import os
+from datetime import datetime
+
+# expiring-soon
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+
+projects_bp = Blueprint("projects", __name__)
+
+# --- MongoDB Setup ---
+mongo_client = MongoClient(os.getenv("MONGOURL"))
+db = mongo_client["cordis_db"]
+projects_collection = db["projects"]
+organizations_collection = db["organizations"]
 
 
-projects_bp = Blueprint('projects', __name__)
+def normalize_project(doc):
+    """Convert MongoDB document to API response format with correct types."""
+    return {
+        "id": doc.get("id"),
+        "acronym": doc.get("acronym"),
+        "title": doc.get("title"),
+        "status": doc.get("status"),
+        "start_date": _parse_date(doc.get("startDate")),
+        "end_date": _parse_date(doc.get("endDate")),
+        "total_cost": _parse_float(doc.get("totalCost")),
+        "eu_contribution": _parse_float(doc.get("ecMaxContribution")),
+        "legal_basis": doc.get("legalBasis"),
+        "topics": doc.get("topics"),
+        "programme": doc.get("frameworkProgramme"),
+        "objective": doc.get("objective"),
+        "signature_date": doc.get("ecSignatureDate")
+    }
 
 
-# 1. All Projects (existing)
+def _parse_float(val):
+    try:
+        return float(str(val).replace(",", "").strip()) if val not in (None, "") else 0.0
+    except Exception:
+        return 0.0
+
+
+def _parse_date(val):
+    if not val:
+        return None
+    try:
+        # Normalize YYYY-MM-DD format
+        return datetime.strptime(val, "%Y-%m-%d").date().isoformat()
+    except Exception:
+        return None
+
+
+def serialize_doc(doc):
+    """Convert ObjectId to string for JSON."""
+    doc = dict(doc)
+    if "_id" in doc:
+        doc["_id"] = str(doc["_id"])
+    return doc
+
+
+def convert_objectid(doc):
+    """Convert all ObjectId fields in a document to strings."""
+    for k, v in doc.items():
+        if isinstance(v, ObjectId):
+            doc[k] = str(v)
+    return doc
+
+
+def enrich_project_with_organizations(project_doc):
+    """Add organization data to a project document, excluding the coordinator from organizations list."""
+    project_id = project_doc["id"]
+
+    # Fetch related organizations
+    organizations = []
+    coordinator = None
+
+    for org in organizations_collection.find({"projectID": project_id}):
+        org_data = serialize_doc(org)
+
+        # Count how many projects this organization participates in
+        org_data["project_count"] = organizations_collection.count_documents({
+            "organisationID": org_data["organisationID"]
+        })
+
+        # Count how many projects this organization coordinates
+        org_data["coordinator_count"] = organizations_collection.count_documents({
+            "organisationID": org_data["organisationID"],
+            "role": {"$regex": "^coordinator$", "$options": "i"}
+        })
+
+        # Check if this is the coordinator
+        if org_data.get("role", "").lower() == "coordinator":
+            coordinator = org_data
+        else:
+            organizations.append(org_data)
+
+    # Create a copy of the project document and add organization data
+    enriched_project = project_doc.copy()
+    enriched_project["coordinator"] = coordinator
+    enriched_project["organizations"] = organizations
+
+    return enriched_project
+
+
+# --- ROUTES ---
+
+
 @projects_bp.route("/", methods=["GET"])
-def get_all_projects():
-    projects = Project.query.limit(15).all()  # Add pagination later
-    return jsonify([{
-        "id": p.project_id,
-        "acronym": p.acronym,
-        "topic": p.project_topic,
-        "start_date": p.start_date,
-        "end_date": p.end_date,
-        "eu_contribution": p.eu_contribution
-    } for p in projects])
+def list_projects():
+    """Return first N projects with pagination."""
+    page = int(request.args.get("page", 1))
+    per_page = int(request.args.get("limit", 20))
+    skip = (page - 1) * per_page
 
-# 2. Recently Added (by start_date DESC)
+    cursor = projects_collection.find({}).skip(skip).limit(per_page)
+    projects = [normalize_project(doc) for doc in cursor]
+    total_count = projects_collection.estimated_document_count()
+
+    return jsonify({
+        "page": page,
+        "limit": per_page,
+        "total": total_count,
+        "results": projects
+    })
 
 
 @projects_bp.route("/recent", methods=["GET"])
 def get_recent_projects():
-    projects = Project.query.order_by(
-        Project.start_date.desc()).limit(9).all()
-    return jsonify([{
-        "id": p.project_id,
-        "acronym": p.acronym,
-        "topic": p.project_topic,
-        "start_date": p.start_date,
-        "end_date": p.end_date,
-        "eu_contribution": p.eu_contribution
-    } for p in projects])
+    """Return projects sorted by start date descending with organization data."""
+    cursor = projects_collection.find({}).sort(
+        "startDate", DESCENDING).limit(15)
 
-# 3. Expiring Soon (by end_date ASC)
+    projects = []
+    for doc in cursor:
+        normalized = normalize_project(doc)
+        enriched = enrich_project_with_organizations(normalized)
+        projects.append(enriched)
 
-
-@projects_bp.route("/expiring", methods=["GET"])
-def get_expiring_projects():
-    projects = Project.query.order_by(Project.end_date.asc()).limit(9).all()
-    return jsonify([{
-        "id": p.project_id,
-        "acronym": p.acronym,
-        "topic": p.project_topic,
-        "start_date": p.start_date,
-        "end_date": p.end_date,
-        "eu_contribution": p.eu_contribution
-    } for p in projects])
-
-# 4. Top Projects (by eu_contribution DESC)
+    return jsonify(projects)
 
 
-@projects_bp.route("/top", methods=["GET"])
-def get_top_projects():
-    projects = Project.query.order_by(
-        Project.eu_contribution.desc()).limit(9).all()
-    return jsonify([{
-        "id": p.project_id,
-        "acronym": p.acronym,
-        "topic": p.project_topic,
-        "eu_contribution": p.eu_contribution,
-        "start_date": p.start_date,
-        "end_date": p.end_date,
-        "eu_contribution": p.eu_contribution
-    } for p in projects])
+@projects_bp.route("/closed", methods=["GET"])
+def get_closed_projects():
+    """Return projects sorted by end date ascending (closest to expiry) with organization data."""
+    cursor = projects_collection.find(
+        {"endDate": {"$ne": None}}).sort("endDate", ASCENDING).limit(15)
+
+    projects = []
+    for doc in cursor:
+        normalized = normalize_project(doc)
+        enriched = enrich_project_with_organizations(normalized)
+        projects.append(enriched)
+
+    return jsonify(projects)
 
 
-# 5. Search and Filter (search_projects)
+@projects_bp.route("/expiring_soon", methods=["GET"])
+def get_expiring_soon_projects():
+    """Return projects that are expiring within the next 2 months."""
+    today = datetime.now().date()
+    two_months_later = today + relativedelta(months=2)
+
+    # Format dates as strings for MongoDB comparison
+    today_str = today.isoformat()
+    two_months_later_str = two_months_later.isoformat()
+
+    # Query for projects ending within the next 2 months
+    query = {
+        "endDate": {
+            "$gte": today_str,
+            "$lte": two_months_later_str
+        }
+    }
+
+    cursor = projects_collection.find(query).sort(
+        "endDate", ASCENDING).limit(15)
+
+    projects = []
+    for doc in cursor:
+        normalized = normalize_project(doc)
+        enriched = enrich_project_with_organizations(normalized)
+        projects.append(enriched)
+
+    return jsonify(projects)
+
+
+# Add this to your projects.py routes
+@projects_bp.route("/statistics/summary", methods=["GET"])
+def get_project_statistics():
+    """Return summary statistics for the projects database."""
+    try:
+        # Total projects count
+        total_projects = projects_collection.count_documents({})
+
+        # Count by status
+        status_counts = {}
+        statuses = ["SIGNED", "CLOSED", "TERMINATED", "ONGOING"]
+
+        for status in statuses:
+            count = projects_collection.count_documents({"status": status})
+            status_counts[status.lower()] = count
+
+        # Total EU contribution
+        pipeline = [
+            {
+                "$group": {
+                    "_id": None,
+                    "total_contribution": {
+                        "$sum": {
+                            "$convert": {
+                                "input": "$ecMaxContribution",
+                                "to": "double",
+                                "onError": 0,
+                                "onNull": 0
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+
+        contribution_result = list(projects_collection.aggregate(pipeline))
+        total_contribution = contribution_result[0]["total_contribution"] if contribution_result else 0
+
+        # Count of participating countries (from organizations)
+        country_count = len(organizations_collection.distinct("country"))
+
+        # Count of participating organizations
+        org_count = organizations_collection.count_documents({})
+
+        return jsonify({
+            "total_projects": total_projects,
+            "status_counts": status_counts,
+            "total_contribution": total_contribution,
+            "countries_involved": country_count,
+            "organizations_count": org_count
+        })
+
+    except Exception as e:
+        print(f"Error generating statistics: {str(e)}")
+        return jsonify({"error": "Could not generate statistics"}), 500
+
+
+# search and filter result
 @projects_bp.route("/search", methods=["GET"])
 def search_projects():
-    from sqlalchemy import or_, and_
-    from datetime import date
+    """Search projects with optional filters and include organizations + coordinator."""
 
-    # --- Query & Pagination ---
-    query = request.args.get("q", "").strip()
-    if not query:
-        return jsonify({"error": "Missing search term"}), 400
+    q = request.args.get("q", "").strip()
+    page = int(request.args.get("page", 1))
+    per_page = int(request.args.get("per_page", 10))
+    skip = (page - 1) * per_page
 
-    page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 10, type=int)
+    query = {}
+
+    # --- Free text search ---
+    if q:
+        query["$or"] = [
+            {"title": {"$regex": q, "$options": "i"}},
+            {"acronym": {"$regex": q, "$options": "i"}},
+            {"keywords": {"$regex": q, "$options": "i"}},
+            {"id": {"$regex": q, "$options": "i"}},
+        ]
 
     # --- Filters ---
+    status = request.args.get("status")
+    if status:
+        query["status"] = status
+
     programme = request.args.get("programme")
-    min_contribution = request.args.get("min_contribution", type=float)
-    max_contribution = request.args.get("max_contribution", type=float)
-    status = request.args.get("status")  # "ongoing" or "expired"
-    start_date = request.args.get("start_date")  # YYYY-MM-DD
-    end_date = request.args.get("end_date")      # YYYY-MM-DD
-    countries_param = request.args.get("countries")  # comma-separated
-
-    # --- Base Query ---
-    projects_query = (
-        db.session.query(Project)
-        .outerjoin(ProjectOrganization, Project.project_id == ProjectOrganization.project_id)
-        .outerjoin(Organization, ProjectOrganization.organization_id == Organization.id)
-        .filter(
-            or_(
-                Project.project_topic.ilike(f"%{query}%"),
-                Project.acronym.ilike(f"%{query}%"),
-                Organization.organization_name.ilike(f"%{query}%"),
-                Organization.acronym.ilike(f"%{query}%")
-            )
-        )
-    )
-
-    # --- Apply Filters ---
-    conditions = []
     if programme:
-        conditions.append(Project.programme == programme)
-    if min_contribution is not None:
-        conditions.append(Project.eu_contribution >= min_contribution)
-    if max_contribution is not None:
-        conditions.append(Project.eu_contribution <= max_contribution)
+        query["frameworkProgramme"] = programme
 
-    today = date.today()
-    if status == "ongoing":
-        conditions.append(and_(Project.start_date <= today,
-                          Project.end_date >= today))
-    elif status == "expired":
-        conditions.append(Project.end_date < today)
+    # --- Date filters (string comparison) ---
+    start_date = request.args.get("start_date")
     if start_date:
-        conditions.append(Project.start_date >= start_date)
+        query["startDate"] = {"$gte": start_date}
+
+    end_date = request.args.get("end_date")
     if end_date:
-        conditions.append(Project.end_date <= end_date)
+        query.setdefault("endDate", {})
+        query["endDate"]["$lte"] = end_date
 
-    # Countries filter
-    if countries_param:
-        countries = [c.strip()
-                     for c in countries_param.split(",") if c.strip()]
-        if countries:
-            conditions.append(Organization.country.in_(countries))
+    # --- Contribution ranges ---
 
-    if conditions:
-        projects_query = projects_query.filter(and_(*conditions))
+    min_contribution = request.args.get("min_contribution")
+    max_contribution = request.args.get("max_contribution")
+    if min_contribution or max_contribution:
+        try:
+            query["ecMaxContribution"] = {}
+            if min_contribution:
+                query["ecMaxContribution"]["$gte"] = float(min_contribution)
+            if max_contribution:
+                query["ecMaxContribution"]["$lte"] = float(max_contribution)
+        except ValueError:
+            pass
 
-    projects_query = projects_query.distinct()
-
-    # --- Pagination ---
-    paginated = projects_query.paginate(
-        page=page, per_page=per_page, error_out=False)
-
-    # --- Format Results ---
+    # --- Find matching projects ---
+    cursor = projects_collection.find(query).skip(skip).limit(per_page)
     results = []
-    for p in paginated.items:
-        # Fetch participants only
-        participants = []
-        project_orgs = (
-            db.session.query(ProjectOrganization, Organization)
-            .join(Organization, ProjectOrganization.organization_id == Organization.id)
-            .filter(ProjectOrganization.project_id == p.project_id)
-            .all()
-        )
-        for po, org in project_orgs:
-            # skip coordinator
-            if p.coordinator_id == org.id:
-                continue
-            participants.append({
-                "id": org.id,
-                "acronym": org.acronym,
-                "name": org.organization_name,
-                "country": org.country,
-                "linkedin": org.linkedin,
-                "role": po.organization_role,
-                "correct_contribution": str(po.correct_contribution),
-                "net_eu_contribution": str(po.net_eu_contribution),
-                "project_or_organ_linkedin": po.project_or_organ_linkedin
+
+    for doc in cursor:
+        doc = serialize_doc(doc)
+        project_id = doc["id"]
+
+        # Fetch related organizations
+        organizations = []
+        for org in organizations_collection.find({"projectID": project_id}):
+            org_data = serialize_doc(org)
+
+            # Count how many projects this organization participates in
+            org_data["project_count"] = organizations_collection.count_documents({
+                "organisationID": org_data["organisationID"]
             })
 
-        # Fetch coordinator info
-        coordinator_info = None
-        if p.coordinator_id:
-            coordinator_org = Organization.query.get(p.coordinator_id)
-            if coordinator_org:
-                coordinator_info = {
-                    "id": coordinator_org.id,
-                    "acronym": coordinator_org.acronym,
-                    "name": coordinator_org.organization_name,
-                    "country": coordinator_org.country,
-                    "linkedin": coordinator_org.linkedin,
-                    "role": "coordinator"
-                }
+            # Count how many projects this organization coordinates
+            org_data["coordinator_count"] = organizations_collection.count_documents({
+                "organisationID": org_data["organisationID"],
+                "role": {"$regex": "^coordinator$", "$options": "i"}
+            })
 
-        status_value = "ongoing" if (
-            p.start_date <= today <= p.end_date) else "expired"
-        remaining_days = (p.end_date - today).days if p.end_date else None
+            organizations.append(org_data)
 
-        results.append({
-            "id": p.project_id,
-            "topic": p.project_topic,
-            "acronym": p.acronym,
-            "start_date": p.start_date,
-            "end_date": p.end_date,
-            "status": status_value,
-            "remaining_days": remaining_days,
-            "total_cost": str(p.total_cost),
-            "eu_contribution": str(p.eu_contribution),
-            "objective": p.objective,
-            "funded_under": p.funded_under,
-            "programme": p.programme,
-            "call_topic": p.call_topic,
-            "call_for_proposal": p.call_for_proposal,
-            "source": p.source,
-            "coordinator": coordinator_info,
-            "participants": participants
-        })
+        # Filter by countries if provided
+        countries = request.args.get("countries")
+        if countries:
+            allowed_countries = set(countries.split(","))
+            org_countries = {org.get("country") for org in organizations}
+            if org_countries.isdisjoint(allowed_countries):
+                continue  # Skip project if no matching country
+
+        # Find coordinator
+        coordinator = next(
+            (org for org in organizations if org.get(
+                "role", "").lower() == "coordinator"),
+            None
+        )
+
+        # Attach coordinator + organizations
+        doc["coordinator"] = coordinator
+        doc["organizations"] = organizations
+
+        results.append(doc)
+
+    total_count = projects_collection.count_documents(query)
 
     return jsonify({
         "projects": results,
-        "total": paginated.total,
+        "total": total_count,
         "page": page,
-        "pages": paginated.pages,
+        "pages": (total_count + per_page - 1) // per_page,
         "per_page": per_page
     })
 
 
-# 6. Single project
-
-@projects_bp.route("/<int:project_id>", methods=["GET"])
+# single project
+@projects_bp.route("/<project_id>", methods=["GET"])
 def get_project(project_id):
-    project = Project.query.get_or_404(project_id)
+    """Return a single project with its organizations and coordinator."""
+    project = db.projects.find_one({"id": project_id})
+    if not project:
+        return jsonify({"error": "Project not found"}), 404
 
-    # --- Fetch Coordinator ---
-    coordinator = None
-    if project.coordinator_id:
-        org = Organization.query.get(project.coordinator_id)
-        if org:
-            project_count = (
-                db.session.query(func.count(ProjectOrganization.project_id))
-                .filter(ProjectOrganization.organization_id == org.id)
-                .scalar()
-            )
-            coordinator = {
-                "id": org.id,
-                "acronym": org.acronym,
-                "name": org.organization_name,
-                "country": org.country,
-                "linkedin": org.linkedin,
-                "project_count": project_count,
-                "role": "coordinator"
-            }
+    project = convert_objectid(project)
+    enriched = enrich_project_with_organizations(project)
 
-    # --- Fetch Participants (excluding coordinator) ---
-    participants = []
-    project_orgs = (
-        db.session.query(ProjectOrganization, Organization)
-        .join(Organization, ProjectOrganization.organization_id == Organization.id)
-        .filter(ProjectOrganization.project_id == project.project_id)
-        .filter(ProjectOrganization.organization_id != project.coordinator_id)
-        .all()
-    )
-
-    for po, org in project_orgs:
-        project_count = (
-            db.session.query(func.count(ProjectOrganization.project_id))
-            .filter(ProjectOrganization.organization_id == org.id)
-            .scalar()
-        )
-        participants.append({
-            "id": org.id,
-            "acronym": org.acronym,
-            "name": org.organization_name,
-            "country": org.country,
-            "linkedin": org.linkedin,
-            "role": po.organization_role,
-            "correct_contribution": str(po.correct_contribution),
-            "net_eu_contribution": str(po.net_eu_contribution),
-            "project_or_organ_linkedin": po.project_linkedin,
-            "project_count": project_count
-        })
-
-    # --- Calculate status and remaining days ---
-    today = date.today()
-    status = None
-    remaining_days = None
-
-    if project.start_date and project.end_date:
-        if project.start_date <= today <= project.end_date:
-            status = "ongoing"
-        elif today > project.end_date:
-            status = "expired"
-        else:
-            status = "not started"
-        remaining_days = (project.end_date - today).days
-
-    # --- Build Response ---
-    result = {
-        "id": project.project_id,
-        "topic": project.project_topic,
-        "acronym": project.acronym,
-        "start_date": project.start_date,
-        "end_date": project.end_date,
-        "status": status,
-        "remaining_days": remaining_days,
-        "total_cost": str(project.total_cost),
-        "eu_contribution": str(project.eu_contribution),
-        "objective": project.objective,
-        "funded_under": project.funded_under,
-        "programme": project.programme,
-        "call_topic": project.call_topic,
-        "call_for_proposal": project.call_for_proposal,
-        "source": project.source,
-        "coordinator": coordinator,
-        "participants": participants
-    }
-
-    return jsonify(result)
+    return jsonify(enriched)

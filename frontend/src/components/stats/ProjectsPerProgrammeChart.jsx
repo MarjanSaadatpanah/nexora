@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Bar } from "react-chartjs-2";
 import {
     Chart as ChartJS,
@@ -11,145 +11,200 @@ import {
     BarElement
 } from "chart.js";
 import { ClipLoader } from "react-spinners";
+import ChartCache from "../../utils/ChartCache";
 
-ChartJS.register(
-    Title,
-    Tooltip,
-    Legend,
-    ArcElement,
-    CategoryScale,
-    LinearScale,
-    BarElement
-);
+// Check if Chart.js is already registered to avoid duplicate registration
+let chartJsRegistered = false;
 
-export default function ProjectsPerProgrammeChart() {
+export default React.memo(function ProjectsPerProgrammeChart() {
     const [chartData, setChartData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Register Chart.js components once
+    useEffect(() => {
+        if (!chartJsRegistered) {
+            ChartJS.register(
+                Title,
+                Tooltip,
+                Legend,
+                ArcElement,
+                CategoryScale,
+                LinearScale,
+                BarElement
+            );
+            chartJsRegistered = true;
+        }
+    }, []);
+
+    // Memoized colors
+    const backgroundColor = useMemo(() => [
+        "#6DAEDB", "#77DD77", "#FFB347", "#B19CD9", "#FF6961",
+        "#AEC6CF", "#FDFD96", "#84B082", "#F49AC2", "#CB99C9"
+    ], []);
+
+    const hoverBackgroundColor = useMemo(() => [
+        "#5A9BC8", "#66CC66", "#F0A040", "#9E8AC9", "#F05959",
+        "#9BB5C4", "#F5F586", "#739E71", "#E48AB0", "#BA88B8"
+    ], []);
+
+    // Memoized chart options
+    const chartOptions = useMemo(() => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'x',
+        plugins: {
+            legend: {
+                display: false,
+            },
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        return `${context.raw.toLocaleString()}`;
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: "rgba(0, 0, 0, 0.05)",
+                },
+                ticks: {
+                    callback: function (value) {
+                        return value.toLocaleString();
+                    }
+                },
+                title: {
+                    display: true,
+                    text: "Number of Projects",
+                    font: {
+                        weight: "bold",
+                        size: 12
+                    }
+                }
+            },
+            x: {
+                grid: {
+                    display: false,
+                },
+                ticks: {
+                    maxRotation: 45,
+                    minRotation: 45
+                },
+                title: {
+                    display: true,
+                    text: "Master calls",
+                    font: {
+                        weight: "bold",
+                        size: 12
+                    }
+                }
+            },
+        },
+        elements: {
+            bar: {
+                barPercentage: 0.7,
+                categoryPercentage: 0.8,
+            }
+        }
+    }), []);
+
+    const fetchData = useCallback(async () => {
+        const cacheKey = 'projects_per_programme';
+        const cachedData = ChartCache.get(cacheKey);
+
+        if (cachedData) {
+            processChartData(cachedData);
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await fetch("http://localhost:5000/api/stats/projects_per_programme");
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Cache the data
+            ChartCache.set(cacheKey, data);
+
+            processChartData(data);
+        } catch (err) {
+            console.error("Error fetching chart data:", err);
+            setError("Failed to load chart data");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const processChartData = useCallback((data) => {
+        // Get top 10 programs
+        const topPrograms = data.slice(0, 10);
+
+        setChartData({
+            labels: topPrograms.map((item) => item.programme || "Unknown"),
+            datasets: [
+                {
+                    data: topPrograms.map((item) => item.project_count),
+                    backgroundColor,
+                    borderColor: "rgba(255, 255, 255, 0.8)",
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    hoverBackgroundColor,
+                },
+            ],
+        });
+    }, [backgroundColor, hoverBackgroundColor]);
 
     useEffect(() => {
-        fetch("http://localhost:5000/stats/projects_per_programme")
-            .then((res) => res.json())
-            .then((data) => {
-                setChartData({
-                    labels: data.map((item) => item.programme || "Unknown"),
-                    datasets: [
-                        {
-                            data: data.map((item) => item.project_count),
-                            backgroundColor: [
-                                "#6DAEDB", // Medium blue
-                                "#77DD77", // Medium green
-                                "#FFB347", // Peach-orange
-                                "#B19CD9", // Lavender
-                                "#FF6961", // Coral
-                                "#AEC6CF", // Light blue
-                                "#FDFD96", // Light yellow
-                                "#84B082", // Sage green
-                                "#F49AC2", // Pink
-                                "#CB99C9", // Mauve
-                            ],
-                            borderColor: "rgba(255, 255, 255, 0.8)",
-                            borderWidth: 1,
-                            borderRadius: 6,
-                            hoverBackgroundColor: [
-                                "#5A9BC8", // Darker blue
-                                "#66CC66", // Darker green
-                                "#F0A040", // Darker peach-orange
-                                "#9E8AC9", // Darker lavender
-                                "#F05959", // Darker coral
-                                "#9BB5C4", // Darker light blue
-                                "#F5F586", // Darker light yellow
-                                "#739E71", // Darker sage green
-                                "#E48AB0", // Darker pink
-                                "#BA88B8", // Darker mauve
-                            ],
-                        },
-                    ],
-                })
-            })
-    }, [])
+        fetchData();
+    }, [fetchData]);
 
+    if (loading) return (
+        <div className="w-full max-w-lg flex justify-center items-center h-96">
+            <ClipLoader size={50} color="#6DAEDB" />
+        </div>
+    );
+
+    if (error) return (
+        <div className="w-full max-w-lg mx-auto p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <p>{error}</p>
+            <button
+                onClick={fetchData}
+                className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+                Retry
+            </button>
+        </div>
+    );
 
     if (!chartData) return (
-        <div className="w-full max-w-lg ">
-            <ClipLoader className="w-1/2 mx-auto" />
+        <div className="w-full max-w-lg mx-auto p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+            <p>No data available for the chart.</p>
         </div>
     );
 
     return (
         <div className="bg-white p-6 w-full max-w-6xl mx-auto mt-32">
             <h2 className="text-xl text-center mb-2 text-gray-800">
-                projects per Programme
+                Projects per Master Call
             </h2>
             <div className="h-96">
                 <Bar
                     data={chartData}
-                    options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        indexAxis: 'x',
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        return `${context.raw.toLocaleString()}`;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: "rgba(0, 0, 0, 0.05)",
-                                },
-                                ticks: {
-                                    callback: function (value) {
-                                        return value.toLocaleString();
-                                    }
-                                },
-                                title: {
-                                    display: true,
-                                    text: "Number of Projects",
-                                    font: {
-                                        weight: "bold",
-                                        size: 12
-                                    }
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false,
-                                },
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                },
-                                title: {
-                                    display: true,
-                                    text: "Programmes",
-                                    font: {
-                                        weight: "bold",
-                                        size: 12
-                                    }
-                                }
-                            },
-                        },
-                        elements: {
-                            bar: {
-                                // This makes the bars thicker
-                                barPercentage: 0.7,
-                                categoryPercentage: 0.8,
-                            }
-                        }
-                    }}
+                    options={chartOptions}
+                    redraw={false}
                 />
             </div>
             <div className="mt-4 text-sm text-gray-500 text-center">
-                Data showing the contribution amounts from EU member countries
+                Data showing the number of projects for top 10 master calls
             </div>
         </div>
     );
-
-}
+});

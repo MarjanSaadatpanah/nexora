@@ -35,3 +35,57 @@ frontend/src
 (pymongo dnspython), dotenv
 
 
+
+
+# projects:
+# _id,
+# id,
+# acronym,
+# status,
+# title,
+# startDate,
+# endDate,
+# totalCost,
+# ecMaxContribution,
+# legalBasis,
+# topics,
+# ecSignatureDate,
+# frameworkProgramme,
+# masterCall,
+# subCall,
+# fundingScheme,
+# objective,
+# contentUpdateDate,
+# rcn,
+# grantDoi,
+# keywords
+
+# organizations:
+# _id,
+# projectID,
+# projectAcronym,
+# organisationID,
+# vatNumber,
+# name,
+# shortName,
+# SME,
+# activityType,
+# street,
+# postCode,
+# city,
+# country,
+# nutsCode,
+# geolocation,
+# organizationURL,
+# contactForm,
+# contentUpdateDate,
+# rcn,
+# order,
+# role,
+# ecContribution,
+# netEcContribution,
+# totalCost,
+# endOfParticipation,
+# active,
+
+
