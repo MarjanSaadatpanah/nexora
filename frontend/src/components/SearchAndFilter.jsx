@@ -31,7 +31,7 @@ const SearchAndFilter = () => {
 
     const navigate = useNavigate();
 
-    // Helper function to check if filters are active
+    // Helper function to check if filters are active 
     const hasActiveFilters = (filtersObj) => {
         return Object.values(filtersObj).some(value =>
             value !== undefined && value !== null && value !== ""
@@ -177,7 +177,7 @@ const SearchAndFilter = () => {
                 </div>
             )}
 
-            {/* Search Results */}
+            {/* Search Results  */}
             {isHomePage && (
                 <ul>
                     {projectList.map((proj) => (

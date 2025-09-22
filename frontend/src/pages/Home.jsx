@@ -6,6 +6,7 @@ import RecentlyAdded from '../components/RecentlyAdded'
 import SearchAndFilter from '../components/SearchAndFilter'
 import { useContext } from 'react';
 import Stats from '../components/stats/Stats'
+// import ProjectsPerProgrammeChart from '../components/stats/ProjectsPerProgrammeChart'
 import ClosedProjectsCompo from '../components/ClosedProjectsCompo'
 
 const Home = () => {
@@ -17,6 +18,7 @@ const Home = () => {
             {!searchActive && <Hero />}
             <SearchAndFilter />
             {!searchActive && <Stats />}
+            {/* {!searchActive && <ProjectsPerProgrammeChart />} */}
             {!searchActive && <RecentlyAdded all={false} />}
             {!searchActive && <ExpieringSoon all={false} />}
             {!searchActive && <ClosedProjectsCompo all={false} />}
