@@ -23,15 +23,23 @@ const useStyles = makeStyles({
     },
 });
 
-const ContributionSlider = ({ min, max, value, onChange }) => {
+const ContributionSlider = ({ min, max, value, onChange, title, type = "contribution" }) => {
     const classes = useStyles();
 
     const handleSliderChange = (_, newValue) => {
         if (Array.isArray(newValue)) {
-            onChange({
-                min_contribution: newValue[0],
-                max_contribution: newValue[1],
-            });
+            // Dynamic parameter names based on type
+            const params = type === "contribution"
+                ? {
+                    min_contribution: newValue[0],
+                    max_contribution: newValue[1],
+                }
+                : {
+                    min_total_cost: newValue[0],
+                    max_total_cost: newValue[1],
+                };
+
+            onChange(params);
         }
     };
 
@@ -46,14 +54,12 @@ const ContributionSlider = ({ min, max, value, onChange }) => {
     };
 
     return (
-        <div className="my-10 ">
-
+        <div className="my-10">
             <Box sx={{ width: "97%", px: 1 }}>
-                <Typography variant="body2" className=" text-gray-600 ">
-                    <label className="block text-xs text-gray-500 ">
-                        EU Contribution Range: {formatCurrency(value[0])} – {formatCurrency(value[1])}
+                <Typography variant="body2" className="text-gray-600">
+                    <label className="block text-xs text-gray-500">
+                        {title}: {formatCurrency(value[0])} – {formatCurrency(value[1])}
                     </label>
-
                 </Typography>
                 <Slider
                     className={classes.slider}
@@ -64,12 +70,7 @@ const ContributionSlider = ({ min, max, value, onChange }) => {
                     min={min}
                     max={max}
                     step={max > 1000000 ? 100000 : 1000}
-                // marks={[
-                //     { value: min, label: formatCurrency(min) },
-                //     { value: max, label: formatCurrency(max) },
-                // ]}
                 />
-
             </Box>
         </div>
     );

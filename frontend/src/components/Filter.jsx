@@ -1,9 +1,16 @@
+
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from "framer-motion";
 import { getName, getCodes } from "country-list";
 import Select from "react-select";
 import ContributionSlider from './filter/ContributionSlider';
 import { IoMdClose } from "react-icons/io";
+
+const EU_COUNTRIES = [
+    'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
+    'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
+    'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'
+];
 
 const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) => {
     const [filters, setFilters] = useState({
@@ -13,7 +20,9 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
         endDate: "",
         selectedCountries: [],
         minContribution: 0,
-        maxContribution: 0
+        maxContribution: 0,
+        minTotalCost: 0,
+        maxTotalCost: 0,
     });
 
     // Initialize with current filters or defaults
@@ -28,19 +37,71 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                     ? currentFilters.countries.split(",")
                     : [],
                 minContribution: currentFilters.min_contribution || 0,
-                maxContribution: currentFilters.max_contribution || 1000000000
+                maxContribution: currentFilters.max_contribution || 1000000000,
+                minTotalCost: currentFilters.min_total_cost || 0,
+                maxTotalCost: currentFilters.max_total_cost || 1000000000,
             });
         }
     }, [currentFilters, filterVisible]);
 
-    const countryOptions = getCodes().map(code => ({
-        value: code,
-        label: getName(code)
-    }));
+    // Create country options with EU Countries as first option
+    const countryOptions = [
+        {
+            value: 'EU_COUNTRIES',
+            label: '🇪🇺 EU Countries',
+            isEUOption: true
+        },
+        ...getCodes().map(code => ({
+            value: code,
+            label: getName(code),
+            isEUOption: false
+        }))
+    ];
 
-    const selectedOptions = countryOptions.filter(opt =>
-        filters.selectedCountries.includes(opt.value)
-    );
+    const selectedOptions = countryOptions.filter(opt => {
+        if (opt.value === 'EU_COUNTRIES') {
+            // Show EU Countries option if all EU countries are selected
+            return EU_COUNTRIES.every(euCountry => filters.selectedCountries.includes(euCountry));
+        }
+        // For individual countries, only show them if EU Countries option is not being displayed
+        // OR if there are additional non-EU countries selected
+        const allEUSelected = EU_COUNTRIES.every(euCountry => filters.selectedCountries.includes(euCountry));
+        const hasNonEUCountries = filters.selectedCountries.some(country => !EU_COUNTRIES.includes(country));
+
+        if (allEUSelected && !hasNonEUCountries) {
+            // If only EU countries are selected, don't show individual EU countries
+            return false;
+        }
+
+        return filters.selectedCountries.includes(opt.value);
+    });
+
+    const handleCountryChange = (selected) => {
+        if (!selected) {
+            setFilters({
+                ...filters,
+                selectedCountries: []
+            });
+            return;
+        }
+
+        let newCountries = [];
+
+        selected.forEach(option => {
+            if (option.value === 'EU_COUNTRIES') {
+                // Add all EU countries
+                newCountries = [...new Set([...newCountries, ...EU_COUNTRIES])];
+            } else if (!option.isEUOption) {
+                // Add individual country
+                newCountries = [...new Set([...newCountries, option.value])];
+            }
+        });
+
+        setFilters({
+            ...filters,
+            selectedCountries: newCountries
+        });
+    };
 
     const handleContributionChange = ({ min_contribution, max_contribution }) => {
         setFilters(prev => ({
@@ -50,12 +111,22 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
         }));
     };
 
+    const handleTotalCostChange = ({ min_total_cost, max_total_cost }) => {
+        setFilters(prev => ({
+            ...prev,
+            minTotalCost: min_total_cost,
+            maxTotalCost: max_total_cost
+        }));
+    };
+
     const handleFiltering = () => {
         onApply({
             programme: filters.programme,
             status: filters.status,
             min_contribution: filters.minContribution,
             max_contribution: filters.maxContribution,
+            min_total_cost: filters.minTotalCost,
+            max_total_cost: filters.maxTotalCost,
             start_date: filters.startDate,
             end_date: filters.endDate,
             countries: filters.selectedCountries.join(",")
@@ -70,10 +141,14 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
             endDate: "",
             selectedCountries: [],
             minContribution: 0,
-            maxContribution: 1000000000
+            maxContribution: 1000000000,
+            minTotalCost: 0,
+            maxTotalCost: 1000000000,
         });
         onApply({});
     };
+
+
 
     return (
         <div>
@@ -109,7 +184,6 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                                 <option value="CLOSED">CLOSED</option>
                                 <option value="SIGNED">SIGNED</option>
                                 <option value="TERMINATED">TERMINATED</option>
-
                             </select>
                         </div>
 
@@ -120,13 +194,11 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                                 isMulti
                                 options={countryOptions}
                                 value={selectedOptions}
-                                onChange={(selected) => setFilters({
-                                    ...filters,
-                                    selectedCountries: selected ? selected.map(s => s.value) : []
-                                })}
+                                onChange={handleCountryChange}
                                 placeholder="Select countries..."
                                 className="react-select-container"
                                 classNamePrefix="react-select"
+                                components={{}}
                                 styles={{
                                     control: (base) => ({
                                         ...base,
@@ -135,24 +207,50 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                                         '&:hover': {
                                             borderColor: '#3b82f6'
                                         }
+                                    }),
+                                    menu: (base) => ({
+                                        ...base,
+                                        zIndex: 9999
+                                    }),
+                                    option: (base, { data }) => ({
+                                        ...base,
+                                        backgroundColor: data.isEUOption ? '#eff6ff' : base.backgroundColor,
+                                        fontWeight: data.isEUOption ? 'bold' : base.fontWeight,
+                                        borderBottom: data.isEUOption ? '1px solid #e5e7eb' : 'none',
+                                        '&:hover': {
+                                            backgroundColor: data.isEUOption ? '#dbeafe' : '#f3f4f6'
+                                        }
                                     })
                                 }}
                             />
                         </div>
 
-                        {/* EU Contribution Range */}
+                        {/* EU Contribution Range  */}
                         <div className="mb-4">
                             <ContributionSlider
+                                title="EU Contribution Range"
                                 min={0}
                                 max={1000000000}
                                 value={[filters.minContribution, filters.maxContribution]}
                                 onChange={handleContributionChange}
+                                type="contribution"
+                            />
+                        </div>
+
+                        {/* Total cost Range  */}
+                        <div className="mb-4">
+                            <ContributionSlider
+                                title="Total Cost Range"
+                                min={0}
+                                max={1000000000}
+                                value={[filters.minTotalCost, filters.maxTotalCost]}
+                                onChange={handleTotalCostChange}
+                                type="total_cost"
                             />
                         </div>
 
                         {/* Date Range */}
                         <div className="mb-4">
-                            {/* <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label> */}
                             <div className="space-y-2">
                                 <div>
                                     <label className="block text-xs text-gray-500 mb-1">Start Date</label>
@@ -199,17 +297,6 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Backdrop */}
-            {/* {filterVisible && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40"
-                    onClick={() => setFilterVisible(false)}
-                />
-            )} */}
         </div>
     );
 };

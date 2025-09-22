@@ -4,10 +4,23 @@ from flask import Blueprint, jsonify, request
 from pymongo import MongoClient, ASCENDING, DESCENDING
 import os
 from datetime import datetime
+from collections import Counter
+import re
 
 # expiring-soon
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+
+# NLP imports
+import spacy
+
+# Initialize spaCy model
+try:
+    nlp = spacy.load("en_core_web_sm")
+    print("✅ spaCy model loaded successfully")
+except OSError:
+    print("❌ spaCy model not found. Please install it with: python -m spacy download en_core_web_sm")
+    nlp = None
 
 projects_bp = Blueprint("projects", __name__)
 
@@ -33,7 +46,8 @@ def normalize_project(doc):
         "topics": doc.get("topics"),
         "programme": doc.get("frameworkProgramme"),
         "objective": doc.get("objective"),
-        "signature_date": doc.get("ecSignatureDate")
+        "signature_date": doc.get("ecSignatureDate"),
+        "keywords": doc.get("keywords")  # Add keywords field
     }
 
 
@@ -68,6 +82,201 @@ def convert_objectid(doc):
         if isinstance(v, ObjectId):
             doc[k] = str(v)
     return doc
+
+
+# === NEW KEYWORD FUNCTIONS ===
+
+def extract_project_keywords(project):
+    """Extract and normalize keywords from project's keyword field and text content."""
+    keywords = set()
+
+    # 1. Use existing keywords field (most important)
+    if project.get("keywords"):
+        project_keywords = project["keywords"]
+        if isinstance(project_keywords, str):
+            # Split by common delimiters
+            raw_keywords = re.split(r'[,;|\n]+', project_keywords)
+            for keyword in raw_keywords:
+                cleaned = keyword.strip().lower()
+                if len(cleaned) > 2:  # Filter out very short words
+                    keywords.add(cleaned)
+        elif isinstance(project_keywords, list):
+            for keyword in project_keywords:
+                if isinstance(keyword, str):
+                    cleaned = keyword.strip().lower()
+                    if len(cleaned) > 2:
+                        keywords.add(cleaned)
+
+    # 2. Extract from title and objective using NLP (if available)
+    if nlp:
+        text_content = ""
+        if project.get("title"):
+            text_content += project["title"] + " "
+        if project.get("objective"):
+            # Take first 500 chars to avoid processing very long texts
+            text_content += project["objective"][:500]
+
+        if text_content:
+            try:
+                doc = nlp(text_content)
+                # Extract meaningful entities and noun phrases
+                for ent in doc.ents:
+                    if ent.label_ in ["PRODUCT", "TECHNOLOGY", "ORG", "EVENT", "WORK_OF_ART"]:
+                        cleaned = ent.text.lower().strip()
+                        if len(cleaned) > 2:
+                            keywords.add(cleaned)
+
+                # Extract key noun phrases (2-4 words)
+                for chunk in doc.noun_chunks:
+                    if 2 <= len(chunk.text.split()) <= 4:
+                        cleaned = chunk.text.lower().strip()
+                        if len(cleaned) > 5:  # Longer phrases only
+                            keywords.add(cleaned)
+
+            except Exception as e:
+                print(f"Error in NLP keyword extraction: {e}")
+
+    return list(keywords)
+
+
+def get_trending_keywords(limit=50):
+    """Get most common keywords across all projects."""
+    try:
+        # Aggregate keywords from all projects
+        pipeline = [
+            {"$match": {"keywords": {"$exists": True, "$ne": None}}},
+            {"$project": {"keywords": 1, "title": 1, "objective": 1}},
+            {"$limit": 1000}  # Process reasonable number of projects
+        ]
+
+        projects = list(projects_collection.aggregate(pipeline))
+        all_keywords = []
+
+        for project in projects:
+            keywords = extract_project_keywords(project)
+            all_keywords.extend(keywords)
+
+        # Count frequency and return top keywords
+        keyword_counter = Counter(all_keywords)
+        return [{"keyword": k, "count": v} for k, v in keyword_counter.most_common(limit)]
+
+    except Exception as e:
+        print(f"Error getting trending keywords: {e}")
+        return []
+
+
+def get_keyword_suggestions(query, limit=10):
+    """Get keyword suggestions based on partial query."""
+    try:
+        if len(query) < 2:
+            return []
+
+        # Use text search on keywords field
+        search_pipeline = [
+            {
+                "$match": {
+                    "$or": [
+                        {"keywords": {"$regex": query, "$options": "i"}},
+                        {"title": {"$regex": query, "$options": "i"}}
+                    ]
+                }
+            },
+            {"$project": {"keywords": 1, "title": 1}},
+            {"$limit": 100}
+        ]
+
+        projects = list(projects_collection.aggregate(search_pipeline))
+        suggestions = set()
+
+        for project in projects:
+            keywords = extract_project_keywords(project)
+            for keyword in keywords:
+                if query.lower() in keyword.lower():
+                    suggestions.add(keyword)
+                    if len(suggestions) >= limit:
+                        break
+            if len(suggestions) >= limit:
+                break
+
+        return sorted(list(suggestions))
+
+    except Exception as e:
+        print(f"Error getting keyword suggestions: {e}")
+        return []
+
+
+def summarize_objective(objective_text, max_sentences=3):
+    """Enhanced summarization using both NLP and project-specific keywords."""
+    if not objective_text or not nlp:
+        return None
+
+    try:
+        doc = nlp(objective_text)
+        sentences = list(doc.sents)
+
+        if len(sentences) <= max_sentences:
+            return objective_text
+
+        # Enhanced keywords specific to EU research projects
+        eu_keywords = [
+            # Core objectives
+            "aims", "objective", "goal", "purpose", "mission", "vision",
+            # Actions
+            "develop", "create", "improve", "enhance", "support", "promote",
+            "address", "focus", "target", "seek", "investigate", "explore",
+            "implement", "establish", "facilitate", "deliver", "provide",
+            # EU-specific terms
+            "innovation", "research", "technology", "sustainability", "digital",
+            "climate", "environment", "health", "security", "mobility",
+            "energy", "agriculture", "education", "society", "economy",
+            # Impact words
+            "impact", "benefit", "solution", "challenge", "opportunity",
+            "transformation", "advancement", "breakthrough", "excellence"
+        ]
+
+        scored = []
+        for i, sent in enumerate(sentences):
+            score = 0
+            sent_text = sent.text.lower()
+
+            # Keyword matching
+            score += sum(2 if word in sent_text else 0 for word in eu_keywords)
+
+            # Position bonus (first sentences often contain main objectives)
+            if i == 0:
+                score += 5
+            elif i == 1:
+                score += 3
+
+            # Length penalty for very short or very long sentences
+            word_count = len(sent.text.split())
+            if 10 <= word_count <= 30:
+                score += 1
+
+            # Entity bonus (using spaCy NER)
+            entities = [ent.label_ for ent in sent.ents]
+            if any(label in entities for label in ["PRODUCT", "TECHNOLOGY", "ORG"]):
+                score += 2
+
+            scored.append((score, sent.text.strip()))
+
+        # Sort by score and take top sentences
+        scored.sort(key=lambda x: x[0], reverse=True)
+        top_sentences = [s for _, s in scored[:max_sentences]]
+
+        # Maintain original order for readability
+        original_order = []
+        for sent in sentences:
+            if sent.text.strip() in top_sentences:
+                original_order.append(sent.text.strip())
+                if len(original_order) == max_sentences:
+                    break
+
+        return " ".join(original_order)
+
+    except Exception as e:
+        print(f"Error in enhanced summarization: {str(e)}")
+        return None
 
 
 def enrich_project_with_organizations(project_doc):
@@ -106,8 +315,7 @@ def enrich_project_with_organizations(project_doc):
     return enriched_project
 
 
-# --- ROUTES ---
-
+# === EXISTING ROUTES (UNCHANGED) ===
 
 @projects_bp.route("/", methods=["GET"])
 def list_projects():
@@ -188,7 +396,6 @@ def get_expiring_soon_projects():
     return jsonify(projects)
 
 
-# Add this to your projects.py routes
 @projects_bp.route("/statistics/summary", methods=["GET"])
 def get_project_statistics():
     """Return summary statistics for the projects database."""
@@ -245,10 +452,11 @@ def get_project_statistics():
         return jsonify({"error": "Could not generate statistics"}), 500
 
 
-# search and filter result
+# === ENHANCED SEARCH ROUTE ===
+
 @projects_bp.route("/search", methods=["GET"])
 def search_projects():
-    """Search projects with optional filters and include organizations + coordinator."""
+    """Enhanced search projects with optional filters, keywords, and include organizations + coordinator."""
 
     q = request.args.get("q", "").strip()
     page = int(request.args.get("page", 1))
@@ -257,16 +465,35 @@ def search_projects():
 
     query = {}
 
-    # --- Free text search ---
+    # --- Enhanced text search (including keywords) ---
     if q:
         query["$or"] = [
             {"title": {"$regex": q, "$options": "i"}},
             {"acronym": {"$regex": q, "$options": "i"}},
             {"keywords": {"$regex": q, "$options": "i"}},
             {"id": {"$regex": q, "$options": "i"}},
+            # Added objective search
+            {"objective": {"$regex": q, "$options": "i"}},
         ]
 
-    # --- Filters ---
+    # --- Keyword-specific search ---
+    keywords_param = request.args.get("keywords")
+    if keywords_param:
+        keywords = [k.strip() for k in keywords_param.split(",") if k.strip()]
+        if keywords:
+            keyword_conditions = []
+            for keyword in keywords:
+                keyword_conditions.append(
+                    {"keywords": {"$regex": keyword, "$options": "i"}}
+                )
+            if keyword_conditions:
+                if "$or" in query:
+                    query["$and"] = [{"$or": query["$or"]},
+                                     {"$or": keyword_conditions}]
+                else:
+                    query["$or"] = keyword_conditions
+
+    # --- Existing filters (unchanged) ---
     status = request.args.get("status")
     if status:
         query["status"] = status
@@ -286,7 +513,6 @@ def search_projects():
         query["endDate"]["$lte"] = end_date
 
     # --- Contribution ranges ---
-
     min_contribution = request.args.get("min_contribution")
     max_contribution = request.args.get("max_contribution")
     if min_contribution or max_contribution:
@@ -296,6 +522,19 @@ def search_projects():
                 query["ecMaxContribution"]["$gte"] = float(min_contribution)
             if max_contribution:
                 query["ecMaxContribution"]["$lte"] = float(max_contribution)
+        except ValueError:
+            pass
+
+    # --- TotalCost ranges ---
+    min_total_cost = request.args.get("min_total_cost")
+    max_total_cost = request.args.get("max_total_cost")
+    if min_total_cost or max_total_cost:
+        try:
+            query["totalCost"] = {}
+            if min_total_cost:
+                query["totalCost"]["$gte"] = float(min_total_cost)
+            if max_total_cost:
+                query["totalCost"]["$lte"] = float(max_total_cost)
         except ValueError:
             pass
 
@@ -340,6 +579,39 @@ def search_projects():
             None
         )
 
+        # Filter coordinator from organizations list
+        organizations = [org for org in organizations if org.get(
+            "role", "").lower() != "coordinator"]
+
+        # Add enhanced keywords
+        doc["extracted_keywords"] = extract_project_keywords(doc)[
+            :10]  # Top 10 keywords
+
+        # Add objective summary if requested
+        if request.args.get('include_summary') == 'true' and doc.get("objective"):
+            doc["objective_summary"] = summarize_objective(doc["objective"])
+        # Always provide objective_data structure for consistency
+        # if doc.get("objective"):
+        #     summary = summarize_objective(doc["objective"]) if request.args.get(
+        #         'include_summary') == 'true' else None
+        #     doc["objective_data"] = {
+        #         "full_text": doc["objective"],
+        #         "summary": summary,
+        #         "has_summary": summary is not None,
+        #         "original_length": len(doc["objective"]),
+        #         "summary_length": len(summary) if summary else 0,
+        #         "compression_ratio": round(len(summary) / len(doc["objective"]) * 100, 1) if summary else 0
+        #     }
+        # else:
+        #     doc["objective_data"] = {
+        #         "full_text": None,
+        #         "summary": None,
+        #         "has_summary": False,
+        #         "original_length": 0,
+        #         "summary_length": 0,
+        #         "compression_ratio": 0
+        #     }
+
         # Attach coordinator + organizations
         doc["coordinator"] = coordinator
         doc["organizations"] = organizations
@@ -357,7 +629,6 @@ def search_projects():
     })
 
 
-# single project
 @projects_bp.route("/<project_id>", methods=["GET"])
 def get_project(project_id):
     """Return a single project with its organizations and coordinator."""
@@ -368,4 +639,104 @@ def get_project(project_id):
     project = convert_objectid(project)
     enriched = enrich_project_with_organizations(project)
 
+    # Add enhanced keywords
+    enriched["extracted_keywords"] = extract_project_keywords(project)
+
+    # Always provide objective summary data structure
+    if project.get("objective"):
+        summary = summarize_objective(project["objective"])
+        enriched["objective_data"] = {
+            "full_text": project["objective"],
+            "summary": summary,
+            "has_summary": summary is not None,
+            "original_length": len(project["objective"]),
+            "summary_length": len(summary) if summary else 0,
+            "compression_ratio": round(len(summary) / len(project["objective"]) * 100, 1) if summary else 0
+        }
+    else:
+        enriched["objective_data"] = {
+            "full_text": None,
+            "summary": None,
+            "has_summary": False,
+            "original_length": 0,
+            "summary_length": 0,
+            "compression_ratio": 0
+        }
+
     return jsonify(enriched)
+
+
+# === NEW KEYWORD-SPECIFIC ENDPOINTS ===
+
+@projects_bp.route("/keywords/trending", methods=["GET"])
+def get_trending_keywords_endpoint():
+    """Get most popular keywords across projects."""
+    try:
+        limit = min(int(request.args.get("limit", 50)), 100)
+        keywords = get_trending_keywords(limit)
+        return jsonify({
+            "keywords": keywords,
+            "total": len(keywords)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@projects_bp.route("/keywords/suggestions", methods=["GET"])
+def get_keyword_suggestions_endpoint():
+    """Get keyword suggestions for autocomplete."""
+    try:
+        query = request.args.get("q", "")
+        limit = min(int(request.args.get("limit", 10)), 20)
+        suggestions = get_keyword_suggestions(query, limit)
+        return jsonify({
+            "suggestions": suggestions,
+            "query": query
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@projects_bp.route("/<project_id>/keywords", methods=["GET"])
+def get_project_keywords_endpoint(project_id):
+    """Get extracted keywords for a specific project."""
+    try:
+        project = projects_collection.find_one({"id": project_id})
+        if not project:
+            return jsonify({"error": "Project not found"}), 404
+
+        keywords = extract_project_keywords(project)
+        return jsonify({
+            "project_id": project_id,
+            "keywords": keywords,
+            "total": len(keywords)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@projects_bp.route("/<project_id>/summary", methods=["GET"])
+def get_project_summary(project_id):
+    """Generate AI summary for a project's objective."""
+    try:
+        project = projects_collection.find_one({"id": project_id})
+        if not project:
+            return jsonify({"error": "Project not found"}), 404
+
+        objective = project.get("objective")
+        if not objective:
+            return jsonify({"error": "No objective available"}), 404
+
+        summary = summarize_objective(objective)
+
+        return jsonify({
+            "project_id": project_id,
+            "original_length": len(objective),
+            "summary_length": len(summary) if summary else 0,
+            "summary": summary,
+            "success": summary is not None
+        })
+
+    except Exception as e:
+        print(f"Error generating summary: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
