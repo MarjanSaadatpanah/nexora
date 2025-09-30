@@ -31,10 +31,13 @@ frontend/src
     └── ProjectDetail (separate route)
 
 - responsive 
-- if work with mongoDB, delete SQLAlchemy
-(pymongo dnspython), dotenv
+
+
 https://data.europa.eu/data/datasets/cordisrefproj?format=csv
 
+
+python -m venv venv
+source venv/Scripts/activate
 
 
 # projects:
