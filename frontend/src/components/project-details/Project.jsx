@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { VscRobot, VscLaw, VscWorkspaceTrusted } from "react-icons/vsc";
 import { FaCalendarCheck, FaTag, FaGlobe, FaEuroSign, FaCreditCard, FaLightbulb, FaClock } from "react-icons/fa";
 import { MdEventNote } from "react-icons/md";
+import ObjectiveSummary from './ObjectiveSummary';
 
 const Project = ({ project }) => {
     const [viewDetails, setViewDetails] = useState(false);
     const [remainingDays, setRemainingDays] = useState(null);
+
+    const [showAiSummary, setShowAiSummary] = useState(false)
 
     useEffect(() => {
         if (project.endDate) {
@@ -188,38 +191,47 @@ const Project = ({ project }) => {
                         <FaLightbulb className="mr-2 text-gray-500" />
                         Project Objective
                         <button
-                            className="ml-auto flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            onClick={() => { setShowAiSummary(!showAiSummary) }}
+                            className="ml-auto flex items-center cursor-pointer text-blue-600 hover:text-blue-800 text-sm font-medium"
                         >
                             <VscRobot className="mr-1" />
-                            AI Summary
+                            {!showAiSummary ? (
+                                <span>Use AI to Make Summary</span>
+                            ) : (
+                                <span>See Original Text</span>
+                            )}
+
                         </button>
                     </h3>
 
-                    <div className="text-gray-700">
-                        {!viewDetails ? (
-                            <p>
-                                {project.objective.slice(0, 280)}
-                                {project.objective.length > 280 && (
+                    {!showAiSummary ? (
+                        <div className="text-gray-700">
+                            {!viewDetails ? (
+                                <p>
+                                    {project.objective.slice(0, 280)}
+                                    {project.objective.length > 280 && (
+                                        <button
+                                            className="text-blue-600 hover:text-blue-800 font-medium ml-1"
+                                            onClick={() => setViewDetails(true)}
+                                        >
+                                            ...Read more
+                                        </button>
+                                    )}
+                                </p>
+                            ) : (
+                                <p>
+                                    {project.objective}
                                     <button
                                         className="text-blue-600 hover:text-blue-800 font-medium ml-1"
-                                        onClick={() => setViewDetails(true)}
+                                        onClick={() => setViewDetails(false)}
                                     >
-                                        ...Read more
+                                        Show less
                                     </button>
-                                )}
-                            </p>
-                        ) : (
-                            <p>
-                                {project.objective}
-                                <button
-                                    className="text-blue-600 hover:text-blue-800 font-medium ml-1"
-                                    onClick={() => setViewDetails(false)}
-                                >
-                                    Show less
-                                </button>
-                            </p>
-                        )}
-                    </div>
+                                </p>
+                            )}
+                        </div>) : (
+                        <ObjectiveSummary id={project.id} />
+                    )}
                 </div>
 
                 {/* Additional Information Suggestions */}
