@@ -454,10 +454,37 @@ def get_project_statistics():
 
 # === ENHANCED SEARCH ROUTE ===
 
+# @projects_bp.route("/suggest", methods=["GET"])
+# def suggest_queries():
+#     q = request.args.get("q", "").strip()
+#     limit = int(request.args.get("limit", 5))
+
+#     if not q:
+#         return jsonify({"suggestions": []})
+
+#     pipeline = [
+#         {"$match": {
+#             "$or": [
+#                 {"title": {"$regex": f'^{q}', "$options": "i"}},
+#                 {"acronym": {"$regex": f'^{q}', "$options": "i"}},
+#                 {"keywords": {"$regex": f'^{q}', "$options": "i"}}
+#             ]
+#         }},
+#         {"$project": {"completion": {
+#             "$ifNull": ["$title", "$acronym"]
+#         }}},
+#         {"$limit": limit}
+#     ]
+
+#     cursor = projects_collection.aggregate(pipeline)
+#     suggestions = [doc["completion"]
+#                    for doc in cursor if doc.get("completion")]
+
+#     return jsonify({"suggestions": suggestions})
+
+
 @projects_bp.route("/search", methods=["GET"])
 def search_projects():
-    """Enhanced search projects with optional filters, keywords, and include organizations + coordinator."""
-
     q = request.args.get("q", "").strip()
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 10))
@@ -465,35 +492,59 @@ def search_projects():
 
     query = {}
 
-    # --- Enhanced text search (including keywords) ---
+    # --- Smarter text search (order-independent) ---
     if q:
-        query["$or"] = [
+        terms = q.split()
+
+        # OR conditions for the full query (exact phrase anywhere)
+        or_conditions = [
             {"title": {"$regex": q, "$options": "i"}},
             {"acronym": {"$regex": q, "$options": "i"}},
             {"keywords": {"$regex": q, "$options": "i"}},
             {"id": {"$regex": q, "$options": "i"}},
-            # Added objective search
             {"objective": {"$regex": q, "$options": "i"}},
         ]
+
+        # AND conditions for individual words (order-independent)
+        and_conditions = []
+        for term in terms:
+            and_conditions.append({
+                "$or": [
+                    {"title": {"$regex": term, "$options": "i"}},
+                    {"acronym": {"$regex": term, "$options": "i"}},
+                    {"keywords": {"$regex": term, "$options": "i"}},
+                    {"id": {"$regex": term, "$options": "i"}},
+                    {"objective": {"$regex": term, "$options": "i"}},
+                ]
+            })
+
+        text_query = {
+            "$or": [
+                {"$or": or_conditions},   # exact phrase
+                {"$and": and_conditions}  # all terms in any order
+            ]
+        }
+
+        if query:
+            query = {"$and": [query, text_query]}
+        else:
+            query = text_query
 
     # --- Keyword-specific search ---
     keywords_param = request.args.get("keywords")
     if keywords_param:
         keywords = [k.strip() for k in keywords_param.split(",") if k.strip()]
         if keywords:
-            keyword_conditions = []
-            for keyword in keywords:
-                keyword_conditions.append(
-                    {"keywords": {"$regex": keyword, "$options": "i"}}
-                )
-            if keyword_conditions:
-                if "$or" in query:
-                    query["$and"] = [{"$or": query["$or"]},
-                                     {"$or": keyword_conditions}]
-                else:
-                    query["$or"] = keyword_conditions
+            keyword_conditions = [
+                {"keywords": {"$regex": k, "$options": "i"}} for k in keywords]
+            keyword_query = {"$or": keyword_conditions}
 
-    # --- Existing filters (unchanged) ---
+            if query:
+                query = {"$and": [query, keyword_query]}
+            else:
+                query = keyword_query
+
+    # --- Existing filters ---
     status = request.args.get("status")
     if status:
         query["status"] = status
@@ -502,7 +553,7 @@ def search_projects():
     if programme:
         query["frameworkProgramme"] = programme
 
-    # --- Date filters (string comparison) ---
+    # --- Date filters ---
     start_date = request.args.get("start_date")
     if start_date:
         query["startDate"] = {"$gte": start_date}
@@ -579,7 +630,7 @@ def search_projects():
             None
         )
 
-        # Filter coordinator from organizations list
+        # Remove coordinator from organizations list
         organizations = [org for org in organizations if org.get(
             "role", "").lower() != "coordinator"]
 
@@ -590,29 +641,7 @@ def search_projects():
         # Add objective summary if requested
         if request.args.get('include_summary') == 'true' and doc.get("objective"):
             doc["objective_summary"] = summarize_objective(doc["objective"])
-        # Always provide objective_data structure for consistency
-        # if doc.get("objective"):
-        #     summary = summarize_objective(doc["objective"]) if request.args.get(
-        #         'include_summary') == 'true' else None
-        #     doc["objective_data"] = {
-        #         "full_text": doc["objective"],
-        #         "summary": summary,
-        #         "has_summary": summary is not None,
-        #         "original_length": len(doc["objective"]),
-        #         "summary_length": len(summary) if summary else 0,
-        #         "compression_ratio": round(len(summary) / len(doc["objective"]) * 100, 1) if summary else 0
-        #     }
-        # else:
-        #     doc["objective_data"] = {
-        #         "full_text": None,
-        #         "summary": None,
-        #         "has_summary": False,
-        #         "original_length": 0,
-        #         "summary_length": 0,
-        #         "compression_ratio": 0
-        #     }
 
-        # Attach coordinator + organizations
         doc["coordinator"] = coordinator
         doc["organizations"] = organizations
 
