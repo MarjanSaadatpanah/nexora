@@ -17,25 +17,25 @@ const client = axios.create({
 //     }
 // }
 
-// export const SearchProjects = async (query, page = 1, perPage = 10, filters = {}) => {
-//     const params = {
-//         q: query,
-//         page,
-//         per_page: perPage
-//     };
+export const SearchProjects = async (query, page = 1, perPage = 10, filters = {}) => {
+    const params = {
+        q: query,
+        page,
+        per_page: perPage
+    };
 
-//     // Only include filters with real values
-//     Object.entries(filters).forEach(([key, value]) => {
-//         if (Array.isArray(value) && value.length > 0) {
-//             params[key] = value.join(',');
-//         } else if (value !== undefined && value !== null && value !== '') {
-//             params[key] = value;
-//         }
-//     });
+    // Only include filters with real values
+    Object.entries(filters).forEach(([key, value]) => {
+        if (Array.isArray(value) && value.length > 0) {
+            params[key] = value.join(',');
+        } else if (value !== undefined && value !== null && value !== '') {
+            params[key] = value;
+        }
+    });
 
-//     const res = await client.get('/projects/search', { params });
-//     return res.data;
-// };
+    const res = await client.get('/projects/search', { params });
+    return res.data;
+};
 
 
 
