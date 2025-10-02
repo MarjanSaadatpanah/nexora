@@ -14,6 +14,7 @@ import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import { useTheme } from '../contexts/ThemeContext';
 
 const SearchAndFilter = () => {
     const { searchTerm, setSearchTerm, projectList, setProjectList, setSearchActive, filters, setFilters, isLoading, setIsLoading } = useContext(SearchContext);
@@ -21,6 +22,8 @@ const SearchAndFilter = () => {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
+
+    const { isDark } = useTheme();
 
     const location = useLocation();
     const isHomePage = location.pathname === '/';
@@ -30,6 +33,8 @@ const SearchAndFilter = () => {
     const debounceRef = useRef(null);
 
     const navigate = useNavigate();
+
+
 
     // Helper function to check if filters are active 
     const hasActiveFilters = (filtersObj) => {
@@ -93,9 +98,6 @@ const SearchAndFilter = () => {
     const handleApplyFilters = (newFilters) => {
         setFilters(newFilters);
         setFilterVisible(false);
-
-        // The useEffect will handle the search automatically
-        // No need to manually trigger fetchProjects here
     };
 
     const handleLoadMore = () => {
@@ -106,12 +108,12 @@ const SearchAndFilter = () => {
     // Clear all filters
     const handleClearAllFilters = () => {
         setFilters({});
-        // The useEffect will handle clearing results automatically
     };
 
     return (
         <>
             <div className="flex items-center mx-auto md:w-full">
+
                 <div className="relative w-full">
                     <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
                         {isLoading && (
@@ -123,17 +125,18 @@ const SearchAndFilter = () => {
                         value={searchTerm}
                         type="text"
                         placeholder="Search Projects, Acronyms, Organizations..."
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 ml-1"
+                        className="bg-gray-50 dark:bg-gray-600 border border-gray-300 text-gray-900 dark:text-gray-100 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 ml-1"
                     />
                 </div>
 
                 <button
                     onClick={() => setFilterVisible(true)}
-                    className="inline-flex items-center py-2.5 px-3 ms-2 text-sm font-medium bg-gray-50 border border-gray-300 text-gray-900 rounded-lg hover:bg-blue-500"
+                    className="inline-flex items-center py-2.5 px-3 ms-2 text-sm font-medium bg-gray-50 dark:bg-gray-600 border border-gray-300 text-gray-900 dark:text-gray-200 rounded-lg hover:bg-blue-500"
                 >
                     <IoFilter className="w-4 h-4 me-2" />
                     Filter
                 </button>
+
             </div>
 
             {/* Filter Box */}
@@ -186,13 +189,18 @@ const SearchAndFilter = () => {
                                 to={`/project/${proj.id}`}
                                 state={{ project: proj }}
                             >
-                                <Card variant="outlined">
+                                <Card variant="outlined"
+                                    sx={{ backgroundColor: isDark ? '#1f2937' : '#ffffff' }}>
                                     <Box sx={{ p: 2 }}>
                                         <Stack
                                             direction="row"
                                             sx={{ justifyContent: 'space-between', alignItems: 'center' }}
                                         >
-                                            <Typography gutterBottom variant="h5" component="div">
+                                            <Typography
+                                                gutterBottom
+                                                variant="h5"
+                                                component="div"
+                                                sx={{ color: isDark ? '#e5e7eb' : 'text.primary' }}>
                                                 {proj.acronym}
                                                 {proj.status === "SIGNED" ? (
                                                     <span className='text-base ml-5 text-green-500'>{proj.status}</span>
@@ -202,11 +210,13 @@ const SearchAndFilter = () => {
                                                     <span className='text-base ml-5 text-gray-500'>{proj.status}</span>
                                                 )}
                                             </Typography>
-                                            <Typography gutterBottom variant="body2" component="div">
+                                            <Typography gutterBottom variant="body2" component="div"
+                                                sx={{ color: isDark ? '#e5e7eb' : 'text.primary' }}>
                                                 ID: {proj.id}
                                             </Typography>
                                         </Stack>
-                                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                        <Typography variant="body2"
+                                            sx={{ color: isDark ? '#e5e7eb' : 'text.primary' }}>
                                             {proj.title}
                                         </Typography>
                                     </Box>
@@ -227,35 +237,41 @@ const SearchAndFilter = () => {
                             </Link>
                         </li>
                     ))}
-                </ul>
+                </ul >
             )}
 
             {/* No results message */}
-            {isHomePage && searchTerm.trim() === '' && !hasActiveFilters(filters) && projectList.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                    Enter a search term or apply filters to see results
-                </div>
-            )}
+            {
+                isHomePage && searchTerm.trim() === '' && !hasActiveFilters(filters) && projectList.length === 0 && (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-300">
+                        Enter a search term or apply filters to see results
+                    </div>
+                )
+            }
 
             {/* No results found message */}
-            {isHomePage && (searchTerm.trim() !== '' || hasActiveFilters(filters)) && projectList.length === 0 && !isLoading && (
-                <div className="text-center py-8 text-gray-500">
-                    No projects found matching your criteria
-                </div>
-            )}
+            {
+                isHomePage && (searchTerm.trim() !== '' || hasActiveFilters(filters)) && projectList.length === 0 && !isLoading && (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-300">
+                        No projects found matching your criteria
+                    </div>
+                )
+            }
 
             {/* Pagination / Load More */}
-            {hasMore && (
-                <div className="flex justify-center my-4">
-                    <Button
-                        variant="contained"
-                        onClick={handleLoadMore}
-                        disabled={loadingMore}
-                    >
-                        {loadingMore ? "Loading..." : "Load More"}
-                    </Button>
-                </div>
-            )}
+            {
+                hasMore && (
+                    <div className="flex justify-center my-4">
+                        <Button
+                            variant="contained"
+                            onClick={handleLoadMore}
+                            disabled={loadingMore}
+                        >
+                            {loadingMore ? "Loading..." : "Load More"}
+                        </Button>
+                    </div>
+                )
+            }
         </>
     );
 };

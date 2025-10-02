@@ -88,7 +88,7 @@ const StatisticsSummaryComp = () => {
     ];
 
     return (
-        <div className="bg-white py-4">
+        <div className="py-4">
             <div className="container mx-auto pl-4">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                     {statItems.map((item) => (
@@ -104,7 +104,7 @@ const StatisticsSummaryComp = () => {
                             </div>
 
                             {loading ? (
-                                <div className="h-6 bg-white bg-opacity-20 rounded animate-pulse"></div>
+                                <div className="h-6  bg-opacity-20 rounded animate-pulse"></div>
                             ) : (
                                 <div className="text-base font-bold">{item.value}</div>
                             )}

@@ -10,7 +10,7 @@ const SimilarProjects = () => {
                 <BiSolidCategory className='mr-3' />
                 <h1> Similar Projects:</h1>
             </div>
-            <p className="max-w-2xl mb-2 font-light text-gray-500 lg:mb-8 md:text-lg lg:text-xl 400">
+            <p className="max-w-2xl mb-2 font-light text-gray-500 dark:text-gray-300 lg:mb-8 md:text-lg lg:text-xl 400">
                 Similar Projects in terms of topics and keywords
             </p>
             <div className="grid gap-x-8 gap-y-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">

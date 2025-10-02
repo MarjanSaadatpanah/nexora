@@ -110,7 +110,7 @@ const ProjectDetails = () => {
                 <div className="lg:flex py-5 pt-25 rounded space-y-3 border-t-2 border-gray-300">
                     <button
                         onClick={handleBack}
-                        className="hidden sm:block fixed pt-20 h-96 text-gray-800 hover:text-blue-500 cursor-pointer focus:ring-4 focus:outline-none focus:ring-black font-medium text-base px-7">
+                        className="hidden sm:block fixed pt-20 h-96 text-gray-800 dark:text-gray-300 hover:text-blue-500 cursor-pointer focus:ring-4 focus:outline-none focus:ring-black font-medium text-base px-7">
                         <span className='text-sm'>Back</span>
                         <FaArrowLeftLong className="text-lg" />
                     </button>
@@ -123,7 +123,7 @@ const ProjectDetails = () => {
                         {/* coordinator (conditionally rendered) */}
                         {coordinator && (
                             <div className="pb-2 mb-3 mt-20">
-                                <div className="flex text-lg text-gray-700">
+                                <div className="flex text-lg text-gray-700 dark:text-gray-200">
                                     <FaCrown className='mt-1 mr-3' />
                                     <h3>Coordinated by:</h3>
                                 </div>
@@ -135,7 +135,7 @@ const ProjectDetails = () => {
                         {/* Participant(s): (conditionally rendered) */}
                         {participants && participants.length > 0 && (
                             <div className="pb-2 mb-3 mt-20 ">
-                                <div className="flex text-lg text-gray-700">
+                                <div className="flex text-lg text-gray-700 dark:text-gray-200">
                                     <FaHandshake className='mt-1 mr-3' />
                                     <h3>Participant(s):</h3>
                                 </div>
