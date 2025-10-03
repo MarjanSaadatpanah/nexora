@@ -187,7 +187,7 @@ const SearchAndFilter = () => {
                         <li key={proj.id} className='my-4 ml-1 shadow-lg'>
                             <Link
                                 to={`/project/${proj.id}`}
-                                state={{ project: proj }}
+                                state={{ project: proj, similars: projectList }}
                             >
                                 <Card variant="outlined"
                                     sx={{ backgroundColor: isDark ? '#1f2937' : '#ffffff' }}>

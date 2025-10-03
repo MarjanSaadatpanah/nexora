@@ -19,11 +19,14 @@ const ProjectDetails = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [project, setProject] = useState(null);
+    const [similarProjects, setSimilarProjects] = useState([]);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         if (location.state?.project) {
             setProject(location.state.project);
+            setSimilarProjects(location.state.similars);
+
             setIsLoading(false);
         } else {
             const fetchProject = async () => {
@@ -41,6 +44,9 @@ const ProjectDetails = () => {
             fetchProject();
         }
     }, [id, location.state, setIsLoading]);
+    const similarProjectsList = similarProjects.filter(
+        (similarProject) => similarProject.id !== project.id
+    );
 
     const handleBack = () => {
         if (location.state?.projectList && location.state?.searchTerm) {
@@ -187,7 +193,7 @@ const ProjectDetails = () => {
                         )}
 
                         <div className='mt-40'>
-                            <SimilarProjects />
+                            <SimilarProjects projects={similarProjectsList} />
                         </div>
                     </div>
                 </div >

@@ -1,23 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import StatusBadge from './project-details/StatusBadge';
 
 const Cards = ({ status, title, acronym, id, eu_contribution, link, project }) => {
 
     return (
         <Link to={link} state={{ project }} >
             <div className="relative flex flex-col my-3 hover:my-2 bg-white dark:bg-gray-900 shadow-sm border border-slate-200 hover:border-slate-400 rounded-lg">
-                {status === "SIGNED" ? (
-                    <div className='text-xs mb-2 rounded-tl-lg rounded-br-lg shadow text-white w-20 text-center py-1 bg-green-500'>{status}</div>
-                ) : status === "CLOSED" ? (
-                    <div className='text-xs mb-2 rounded-tl-lg rounded-br-lg shadow text-white w-20 text-center py-1 bg-red-500'>{status}</div>
-                ) : (
-                    <div className='text-xs mb-2 rounded-tl-lg rounded-br-lg shadow text-white w-20 text-center py-1 bg-gray-500'>{status}</div>
-                )}
+                <StatusBadge status={status} />
+
                 <div className="p-4">
-
-
-
-
                     <span className="text-slate-800 dark:text-slate-200 font-semibold">{acronym}</span>
 
                     <p className="text-slate-800 dark:text-slate-200 leading-normal font-light line-clamp-4 h-24">

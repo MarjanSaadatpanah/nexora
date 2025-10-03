@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@mui/icons-material": "^7.2.0",
+    "@mui/joy": "^5.0.0-beta.52",
     "@mui/material": "^7.2.0",
     "@mui/styles": "^6.4.8",
     "@tailwindcss/vite": "^4.1.13",
