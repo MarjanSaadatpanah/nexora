@@ -25,11 +25,11 @@ const Organization = ({ organization }) => {
   const InfoBox = ({ lable, value, icon: Icon }) => {
     return (
       <div className='flex border-b-2 border-white py-2 my-3'>
-        <label className="flex text-sm text-gray-900 w-28">
+        <label className="flex text-sm text-gray-900 dark:text-gray-300 w-28">
           {Icon && <Icon className='mr-2 mt-1' />}
           {lable}:
         </label>
-        <div className="block text-sm font-medium text-gray-900">
+        <div className="block text-sm font-medium text-gray-900 dark:text-gray-300">
           {value}
         </div>
       </div>
@@ -37,7 +37,7 @@ const Organization = ({ organization }) => {
   };
 
   return (
-    <label className="inline-flex  items-center justify-between text-gray-900 w-full pt-3 border-t-2 border-t-gray-200 hover:bg-slate-100">
+    <label className="inline-flex  items-center justify-between text-gray-900 dark:text-gray-300 w-full pt-3 border-t-2 border-t-gray-200 hover:bg-slate-100 dark:hover:bg-slate-900">
       <div className="block w-full ">
         <div className='flex w-full'>
           <div className="w-3/6 ml-4 pr-2">
@@ -98,7 +98,7 @@ const Organization = ({ organization }) => {
 
         {/* show details of organization */}
         {coordinatorExpanded && organization && (
-          <motion.div className='flex bg-gray-200 p-3 rounded-bl-lg rounded-br-lg mt-5'>
+          <motion.div className='flex bg-gray-200 dark:bg-gray-950 p-3 rounded-bl-lg rounded-br-lg mt-5'>
             <div class="lg:flex mt-1 mx-2  w-11/12">
               <div className='lg:w-1/2'>
                 <InfoBox lable="Role" icon={RiAdminFill} value={organization.role} />

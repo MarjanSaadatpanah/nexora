@@ -13,7 +13,7 @@ const Home = () => {
     const { searchActive } = useContext(SearchContext);
 
     return (
-        <div className='w-full m-auto pt-20 min-h-screen '>
+        <div className=' w-full m-auto pt-20 min-h-screen '>
 
             {!searchActive && <Hero />}
             <SearchAndFilter />

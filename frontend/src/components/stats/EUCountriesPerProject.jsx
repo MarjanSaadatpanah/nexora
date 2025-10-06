@@ -22,9 +22,12 @@ ChartJS.register(
     LinearScale,
     BarElement
 );
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function EUCountriesPerProject() {
     const [chartData, setChartData] = useState(null);
+
+    const { isDark } = useTheme();
 
     useEffect(() => {
         fetch("http://localhost:5000/api/stats/projects_by_country")
@@ -74,11 +77,13 @@ export default function EUCountriesPerProject() {
         </div>
     );
 
+    // Define colors based on theme
+    const textColor = isDark ? '#e5e7eb' : '#1f2937';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
+
     return (
-        <div className="bg-white p-6 w-full max-w-6xl mx-auto">
-            {/* <h2 className="text-xl font-bold text-center mb-6 text-gray-800">
-                EU Contribution per Country
-            </h2> */}
+        <div className="p-6 w-full max-w-6xl mx-auto">
             <div className="h-96">
                 <Bar
                     data={chartData}
@@ -91,6 +96,11 @@ export default function EUCountriesPerProject() {
                                 display: false,
                             },
                             tooltip: {
+                                backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                                titleColor: textColor,
+                                bodyColor: textColor,
+                                borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                                borderWidth: 1,
                                 callbacks: {
                                     label: function (context) {
                                         return `${context.raw.toLocaleString()}`;
@@ -102,14 +112,16 @@ export default function EUCountriesPerProject() {
                             y: {
                                 beginAtZero: true,
                                 grid: {
-                                    color: "rgba(0, 0, 0, 0.05)",
+                                    color: gridColor,
                                 },
                                 ticks: {
+                                    color: textColor,
                                     callback: function (value) {
                                         return value.toLocaleString();
                                     }
                                 },
                                 title: {
+                                    color: textColor,
                                     display: true,
                                     text: "Number of Projects",
                                     font: {
@@ -123,10 +135,12 @@ export default function EUCountriesPerProject() {
                                     display: false,
                                 },
                                 ticks: {
+                                    color: textColor,
                                     maxRotation: 45,
                                     minRotation: 45
                                 },
                                 title: {
+                                    color: textColor,
                                     display: true,
                                     text: "Data showing the number of projects for each EU countries",
                                     font: {

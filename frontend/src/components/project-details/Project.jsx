@@ -3,6 +3,7 @@ import { VscRobot, VscLaw, VscWorkspaceTrusted } from "react-icons/vsc";
 import { FaCalendarCheck, FaTag, FaGlobe, FaEuroSign, FaCreditCard, FaLightbulb, FaClock } from "react-icons/fa";
 import { MdEventNote } from "react-icons/md";
 import ObjectiveSummary from './ObjectiveSummary';
+import ActionMenu from './ActionMenu';
 
 const Project = ({ project }) => {
     const [viewDetails, setViewDetails] = useState(false);
@@ -50,10 +51,10 @@ const Project = ({ project }) => {
     const InfoCard = ({ title, value, icon, className = "" }) => (
         <div className={` p-4 rounded-lg shadow border border-gray-100 ${className}`}>
             <div className="flex items-center mb-2">
-                <span className="text-gray-500 mr-2">{icon}</span>
-                <span className="text-sm font-medium text-gray-600">{title}</span>
+                <span className="text-gray-500 dark:text-gray-400 mr-2">{icon}</span>
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</span>
             </div>
-            <p className="text-base font-semibold text-gray-900">{value || "Not Defined"}</p>
+            <p className="text-base font-semibold text-gray-900 dark:text-gray-300">{value || "Not Defined"}</p>
         </div>
     );
 
@@ -61,20 +62,22 @@ const Project = ({ project }) => {
         <div className="flex items-start py-3 border-b border-gray-100 last:border-b-0">
             <span className="text-gray-400 mr-3 mt-1">{icon}</span>
             <div className="flex-1 text-sm">
-                <p className="text-gray-600">{label}</p>
-                <p className="text-gray-900">{value || "Not Defined"}</p>
+                <p className="text-gray-600 dark:text-gray-400">{label}</p>
+                <p className="text-gray-900 dark:text-gray-300">{value || "Not Defined"}</p>
             </div>
         </div>
     );
 
     return (
-        <div className="bg-white rounded-xl shadow-md overflow-hidden ">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md overflow-hidden ">
             {/* Header Section */}
             <div className="p-6 ">
                 <div className="flex justify-between items-start">
                     <div className="flex-1">
-                        <h1 className="text-2xl text-gray-900 mb-2">{project.title}</h1>
-
+                        <div className="flex justify-between">
+                            <h1 className="text-2xl text-gray-900 dark:text-gray-300 mb-2">{project.title}</h1>
+                            <ActionMenu id={project.id} />
+                        </div>
                         <div className="flex justify-between mt-7">
                             <div>
                                 <span className="inline-flex items-center px-3 py-1 rounded mr-2 text-xs font-medium bg-blue-100 text-blue-800">
@@ -95,7 +98,8 @@ const Project = ({ project }) => {
                                     </span>
                                 )}
                             </div>
-                            <span className=" inline-flex items-center px-3 py-1 rounded-full text-sm">
+
+                            <span className="text-gray-800 dark:text-gray-300 inline-flex items-center px-3 py-1 rounded-full text-sm">
                                 ID: {project.id}
                             </span>
                         </div>
@@ -107,19 +111,19 @@ const Project = ({ project }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 ">
                 <InfoCard
                     title="Total Cost"
-                    className='bg-cyan-100'
+                    className='bg-cyan-100 dark:bg-gray-900'
                     value={formatCurrency(project.totalCost)}
                     icon={<FaEuroSign />}
                 />
                 <InfoCard
                     title="EU Contribution"
-                    className='bg-blue-100'
+                    className='bg-blue-100 dark:bg-gray-800'
                     value={formatCurrency(project.eu_contribution || project.ecMaxContribution)}
                     icon={<FaCreditCard />}
                 />
                 <InfoCard
                     title="Funding Scheme"
-                    className='bg-cyan-100'
+                    className='bg-cyan-100 dark:bg-gray-900'
                     value={project.fundingScheme}
                     icon={<VscWorkspaceTrusted />}
                 />
@@ -128,9 +132,9 @@ const Project = ({ project }) => {
             {/* Details Section */}
             <div className="p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                            <FaCalendarCheck className="mr-2 text-gray-500" />
+                    <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-300 mb-4 flex items-center">
+                            <FaCalendarCheck className="mr-2 text-gray-500 dark:text-gray-400" />
                             Project Timeline
                         </h3>
                         <DetailItem
@@ -150,9 +154,9 @@ const Project = ({ project }) => {
                         />
                     </div>
 
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                            <FaTag className="mr-2 text-gray-500" />
+                    <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-300 mb-4 flex items-center">
+                            <FaTag className="mr-2 text-gray-500 dark:text-gray-400" />
                             Project Details
                         </h3>
                         <DetailItem
@@ -172,7 +176,7 @@ const Project = ({ project }) => {
                         />
                         {project.keywords && (
                             <div className="py-3 border-b border-gray-100 last:border-b-0">
-                                <p className="text-sm font-medium text-gray-600 mb-2">Keywords</p>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Keywords</p>
                                 <div className="flex flex-wrap gap-2">
                                     {project.keywords.split(",").map((keyword, index) => (
                                         <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
@@ -186,9 +190,9 @@ const Project = ({ project }) => {
                 </div>
 
                 {/* Objective Section */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <FaLightbulb className="mr-2 text-gray-500" />
+                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                        <FaLightbulb className="mr-2 text-gray-500 dark:text-gray-300" />
                         Project Objective
                         <button
                             onClick={() => { setShowAiSummary(!showAiSummary) }}
@@ -205,7 +209,7 @@ const Project = ({ project }) => {
                     </h3>
 
                     {!showAiSummary ? (
-                        <div className="text-gray-700">
+                        <div className="text-gray-700 dark:text-gray-200">
                             {!viewDetails ? (
                                 <p>
                                     {project.objective.slice(0, 280)}

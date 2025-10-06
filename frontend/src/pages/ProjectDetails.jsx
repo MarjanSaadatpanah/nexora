@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import React, { useState, useEffect, useContext } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -18,11 +19,14 @@ const ProjectDetails = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [project, setProject] = useState(null);
+    const [similarProjects, setSimilarProjects] = useState([]);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         if (location.state?.project) {
             setProject(location.state.project);
+            setSimilarProjects(location.state.similars);
+
             setIsLoading(false);
         } else {
             const fetchProject = async () => {
@@ -40,6 +44,9 @@ const ProjectDetails = () => {
             fetchProject();
         }
     }, [id, location.state, setIsLoading]);
+    const similarProjectsList = similarProjects.filter(
+        (similarProject) => similarProject.id !== project.id
+    );
 
     const handleBack = () => {
         if (location.state?.projectList && location.state?.searchTerm) {
@@ -105,90 +112,92 @@ const ProjectDetails = () => {
 
     return (
         <>
-            <div className="lg:flex py-5 pt-25 rounded space-y-3 border-t-2 border-gray-300">
-                <button
-                    onClick={handleBack}
-                    className="hidden sm:block fixed pt-20 h-96 text-gray-800 hover:text-blue-500 cursor-pointer focus:ring-4 focus:outline-none focus:ring-black font-medium text-base px-7">
-                    <span className='text-sm'>Back</span>
-                    <FaArrowLeftLong className="text-lg" />
-                </button>
+            <Suspense fullback={<h1>Loading project details...</h1>}>
+                <div className="lg:flex py-5 pt-25 rounded space-y-3 border-t-2 border-gray-300">
+                    <button
+                        onClick={handleBack}
+                        className="hidden sm:block fixed pt-20 h-96 text-gray-800 dark:text-gray-300 hover:text-blue-500 cursor-pointer focus:ring-4 focus:outline-none focus:ring-black font-medium text-base px-7">
+                        <span className='text-sm'>Back</span>
+                        <FaArrowLeftLong className="text-lg" />
+                    </button>
 
-                <div className='lg:pl-24 min-h-screen'>
-                    {/* project information */}
-                    <Project project={project} />
+                    <div className='lg:pl-24 min-h-screen'>
+                        {/* project information */}
+                        <Project project={project} />
 
 
-                    {/* coordinator (conditionally rendered) */}
-                    {coordinator && (
-                        <div className="pb-2 mb-3 mt-20">
-                            <div className="flex text-lg text-gray-700">
-                                <FaCrown className='mt-1 mr-3' />
-                                <h3>Coordinated by:</h3>
+                        {/* coordinator (conditionally rendered) */}
+                        {coordinator && (
+                            <div className="pb-2 mb-3 mt-20">
+                                <div className="flex text-lg text-gray-700 dark:text-gray-200">
+                                    <FaCrown className='mt-1 mr-3' />
+                                    <h3>Coordinated by:</h3>
+                                </div>
+
+                                <Organization organization={coordinator} />
                             </div>
+                        )}
 
-                            <Organization organization={coordinator} />
-                        </div>
-                    )}
+                        {/* Participant(s): (conditionally rendered) */}
+                        {participants && participants.length > 0 && (
+                            <div className="pb-2 mb-3 mt-20 ">
+                                <div className="flex text-lg text-gray-700 dark:text-gray-200">
+                                    <FaHandshake className='mt-1 mr-3' />
+                                    <h3>Participant(s):</h3>
+                                </div>
 
-                    {/* Participant(s): (conditionally rendered) */}
-                    {participants && participants.length > 0 && (
-                        <div className="pb-2 mb-3 mt-20 ">
-                            <div className="flex text-lg text-gray-700">
-                                <FaHandshake className='mt-1 mr-3' />
-                                <h3>Participant(s):</h3>
+                                <ul className="grid w-full gap-2 grid-cols-1">
+                                    {participants.map((participant, index) => (
+                                        <li key={participant.id || index}>
+                                            <Organization organization={participant} />
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
+                        )}
 
-                            <ul className="grid w-full gap-2 grid-cols-1">
-                                {participants.map((participant, index) => (
-                                    <li key={participant.id || index}>
-                                        <Organization organization={participant} />
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
+                        {/* thirdParty(s): (conditionally rendered) */}
+                        {thirdParties && thirdParties.length > 0 && (
+                            <div className="pb-2 mb-3 mt-20">
+                                <div className="flex text-lg text-gray-700">
+                                    <FaGlobe className='mt-1 mr-3' />
+                                    <h3>Third Party(s):</h3>
+                                </div>
 
-                    {/* thirdParty(s): (conditionally rendered) */}
-                    {thirdParties && thirdParties.length > 0 && (
-                        <div className="pb-2 mb-3 mt-20">
-                            <div className="flex text-lg text-gray-700">
-                                <FaGlobe className='mt-1 mr-3' />
-                                <h3>Third Party(s):</h3>
+                                <ul className="grid w-full gap-2 grid-cols-1">
+                                    {thirdParties.map((thirdParty, index) => (
+                                        <li key={thirdParty.id || index}>
+                                            <Organization organization={thirdParty} />
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
+                        )}
 
-                            <ul className="grid w-full gap-2 grid-cols-1">
-                                {thirdParties.map((thirdParty, index) => (
-                                    <li key={thirdParty.id || index}>
-                                        <Organization organization={thirdParty} />
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
+                        {/* associatedPartner(s): (conditionally rendered) */}
+                        {associatedPartners && associatedPartners.length > 0 && (
+                            <div className="pb-2 mb-3 mt-20">
+                                <div className="flex text-lg text-gray-700">
+                                    <BsPeopleFill className='mt-1 mr-3' />
+                                    <h3>Partner(s):</h3>
+                                </div>
 
-                    {/* associatedPartner(s): (conditionally rendered) */}
-                    {associatedPartners && associatedPartners.length > 0 && (
-                        <div className="pb-2 mb-3 mt-20">
-                            <div className="flex text-lg text-gray-700">
-                                <BsPeopleFill className='mt-1 mr-3' />
-                                <h3>Partner(s):</h3>
+                                <ul className="grid w-full gap-2 grid-cols-1">
+                                    {associatedPartners.map((associatedPartner, index) => (
+                                        <li key={associatedPartner.id || index}>
+                                            <Organization organization={associatedPartner} />
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
+                        )}
 
-                            <ul className="grid w-full gap-2 grid-cols-1">
-                                {associatedPartners.map((associatedPartner, index) => (
-                                    <li key={associatedPartner.id || index}>
-                                        <Organization organization={associatedPartner} />
-                                    </li>
-                                ))}
-                            </ul>
+                        <div className='mt-40'>
+                            <SimilarProjects projects={similarProjectsList} />
                         </div>
-                    )}
-
-                    <div className='mt-40'>
-                        <SimilarProjects />
                     </div>
-                </div>
-            </div >
+                </div >
+            </Suspense>
         </>
     );
 }

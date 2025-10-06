@@ -5,6 +5,18 @@ const client = axios.create({
 })
 
 
+// export async function SuggestProjects(query, limit = 10) {
+//     try {
+//         const response = await client.get(
+//             `projects/suggest?q=${encodeURIComponent(query)}&limit=${limit}`
+//         );
+//         return response.data;
+//     } catch (error) {
+//         console.error("SuggestProjects error:", error);
+//         return { suggestions: [] };
+//     }
+// }
+
 export const SearchProjects = async (query, page = 1, perPage = 10, filters = {}) => {
     const params = {
         q: query,

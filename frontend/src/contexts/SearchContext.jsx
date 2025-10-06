@@ -9,6 +9,7 @@ export const SearchProvider = ({ children }) => {
     const [filters, setFilters] = useState({});
     const [isLoading, setIsLoading] = useState(false);
 
+
     return (
         <SearchContext.Provider
             value={{

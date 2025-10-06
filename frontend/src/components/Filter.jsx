@@ -5,6 +5,7 @@ import { getName, getCodes } from "country-list";
 import Select from "react-select";
 import ContributionSlider from './filter/ContributionSlider';
 import { IoMdClose } from "react-icons/io";
+import { useTheme } from '../contexts/ThemeContext';
 
 const EU_COUNTRIES = [
     'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
@@ -24,6 +25,8 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
         minTotalCost: 0,
         maxTotalCost: 0,
     });
+
+    const { isDark } = useTheme();
 
     // Initialize with current filters or defaults
     useEffect(() => {
@@ -60,16 +63,12 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
 
     const selectedOptions = countryOptions.filter(opt => {
         if (opt.value === 'EU_COUNTRIES') {
-            // Show EU Countries option if all EU countries are selected
             return EU_COUNTRIES.every(euCountry => filters.selectedCountries.includes(euCountry));
         }
-        // For individual countries, only show them if EU Countries option is not being displayed
-        // OR if there are additional non-EU countries selected
         const allEUSelected = EU_COUNTRIES.every(euCountry => filters.selectedCountries.includes(euCountry));
         const hasNonEUCountries = filters.selectedCountries.some(country => !EU_COUNTRIES.includes(country));
 
         if (allEUSelected && !hasNonEUCountries) {
-            // If only EU countries are selected, don't show individual EU countries
             return false;
         }
 
@@ -159,13 +158,13 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 300 }}
                         transition={{ type: "spring", damping: 25 }}
-                        className="bg-white px-5 py-5 fixed border-l border-gray-200 top-0 right-0 lg:w-[420px] w-full h-screen m-auto z-50 overflow-y-auto shadow-xl"
+                        className="bg-white dark:bg-black px-5 py-5 fixed border-l border-gray-200 top-0 right-0 lg:w-[420px] w-full h-screen m-auto z-50 overflow-y-auto shadow-xl"
                         key="box"
                     >
                         <div className='flex justify-between items-center mb-4'>
                             <h2 className="text-xl font-semibold text-gray-800"></h2>
                             <button
-                                className="text-gray-500 hover:text-gray-700  rounded-full hover:bg-gray-100"
+                                className="text-gray-500 dark:text-gray-200 hover:text-gray-700  rounded-full hover:bg-gray-100"
                                 onClick={() => setFilterVisible(false)}
                             >
                                 <IoMdClose size={20} />
@@ -174,11 +173,11 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
 
                         {/* Status */}
                         <div className="mb-4">
-                            <label className="block text-xs text-gray-500 mb-1">Status</label>
+                            <label className="block text-xs text-gray-500 dark:text-gray-200 mb-1">Status</label>
                             <select
                                 value={filters.status}
                                 onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border bg-white dark:bg-black text-gray-800 dark:text-gray-200  border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="">All Statuses</option>
                                 <option value="CLOSED">CLOSED</option>
@@ -189,7 +188,7 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
 
                         {/* Countries */}
                         <div className="mb-4">
-                            <label className="block text-xs text-gray-500 mb-1">Countries</label>
+                            <label className="block text-xs text-gray-500 dark:text-gray-200 mb-1">Countries</label>
                             <Select
                                 isMulti
                                 options={countryOptions}
@@ -203,23 +202,63 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                                     control: (base) => ({
                                         ...base,
                                         minHeight: '42px',
-                                        borderColor: '#d1d5db',
+                                        backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                                        borderColor: isDark ? '#374151' : '#d1d5db',
+                                        color: isDark ? '#e5e7eb' : '#1f2937',
                                         '&:hover': {
                                             borderColor: '#3b82f6'
                                         }
                                     }),
                                     menu: (base) => ({
                                         ...base,
+                                        backgroundColor: isDark ? '#1f2937' : '#ffffff',
                                         zIndex: 9999
                                     }),
-                                    option: (base, { data }) => ({
+                                    option: (base, { data, isFocused, isSelected }) => ({
                                         ...base,
-                                        backgroundColor: data.isEUOption ? '#eff6ff' : base.backgroundColor,
+                                        backgroundColor: isSelected
+                                            ? '#3b82f6'
+                                            : isFocused
+                                                ? (isDark ? '#374151' : '#f3f4f6')
+                                                : data.isEUOption
+                                                    ? (isDark ? '#1e3a5f' : '#eff6ff')
+                                                    : (isDark ? '#1f2937' : '#ffffff'),
+                                        color: isSelected || (isDark && isFocused) ? '#ffffff' : (isDark ? '#e5e7eb' : '#1f2937'),
                                         fontWeight: data.isEUOption ? 'bold' : base.fontWeight,
-                                        borderBottom: data.isEUOption ? '1px solid #e5e7eb' : 'none',
+                                        borderBottom: data.isEUOption ? `1px solid ${isDark ? '#374151' : '#e5e7eb'}` : 'none',
                                         '&:hover': {
-                                            backgroundColor: data.isEUOption ? '#dbeafe' : '#f3f4f6'
+                                            backgroundColor: data.isEUOption
+                                                ? (isDark ? '#1e40af' : '#dbeafe')
+                                                : (isDark ? '#374151' : '#f3f4f6')
                                         }
+                                    }),
+                                    singleValue: (base) => ({
+                                        ...base,
+                                        color: isDark ? '#e5e7eb' : '#1f2937'
+                                    }),
+                                    multiValue: (base) => ({
+                                        ...base,
+                                        backgroundColor: isDark ? '#374151' : '#e5e7eb'
+                                    }),
+                                    multiValueLabel: (base) => ({
+                                        ...base,
+                                        color: isDark ? '#e5e7eb' : '#1f2937'
+                                    }),
+                                    multiValueRemove: (base) => ({
+                                        ...base,
+                                        color: isDark ? '#9ca3af' : '#6b7280',
+                                        '&:hover': {
+                                            backgroundColor: isDark ? '#4b5563' : '#d1d5db',
+                                            color: isDark ? '#f3f4f6' : '#1f2937'
+                                        }
+                                    }),
+                                    input: (base) => ({
+                                        ...base,
+                                        color: isDark ? '#e5e7eb' : '#1f2937'
+                                    }),
+                                    placeholder: (base) => ({
+                                        ...base,
+                                        color: isDark ? '#9ca3af' : '#6b7280'
                                     })
                                 }}
                             />
@@ -253,7 +292,7 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                         <div className="mb-4">
                             <div className="space-y-2">
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">Start Date</label>
+                                    <label className="block text-xs text-gray-500 dark:text-gray-200 mb-1">Start Date</label>
                                     <input
                                         type="date"
                                         value={filters.startDate}
@@ -262,7 +301,7 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">End Date</label>
+                                    <label className="block text-xs text-gray-500 dark:text-gray-200 mb-1">End Date</label>
                                     <input
                                         type="date"
                                         value={filters.endDate}
@@ -282,13 +321,13 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                                 Apply Filters
                             </button>
                             <button
-                                className="w-full py-2.5 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-md transition-colors"
+                                className="w-full py-2.5 bg-gray-300 hover:bg-gray-400 text-black font-medium rounded-md transition-colors"
                                 onClick={handleResetFiltering}
                             >
                                 Reset Filters
                             </button>
                             <button
-                                className="w-full py-2.5 border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium rounded-md transition-colors"
+                                className="w-full py-2.5 border border-gray-300 hover:bg-gray-100 text-gray-700 dark:text-gray-300 font-medium rounded-md transition-colors"
                                 onClick={() => setFilterVisible(false)}
                             >
                                 Cancel
