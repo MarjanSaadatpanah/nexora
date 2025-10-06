@@ -7,6 +7,7 @@ from datetime import datetime
 from collections import Counter
 import re
 
+
 # expiring-soon
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -450,37 +451,6 @@ def get_project_statistics():
     except Exception as e:
         print(f"Error generating statistics: {str(e)}")
         return jsonify({"error": "Could not generate statistics"}), 500
-
-
-# === ENHANCED SEARCH ROUTE ===
-
-# @projects_bp.route("/suggest", methods=["GET"])
-# def suggest_queries():
-#     q = request.args.get("q", "").strip()
-#     limit = int(request.args.get("limit", 5))
-
-#     if not q:
-#         return jsonify({"suggestions": []})
-
-#     pipeline = [
-#         {"$match": {
-#             "$or": [
-#                 {"title": {"$regex": f'^{q}', "$options": "i"}},
-#                 {"acronym": {"$regex": f'^{q}', "$options": "i"}},
-#                 {"keywords": {"$regex": f'^{q}', "$options": "i"}}
-#             ]
-#         }},
-#         {"$project": {"completion": {
-#             "$ifNull": ["$title", "$acronym"]
-#         }}},
-#         {"$limit": limit}
-#     ]
-
-#     cursor = projects_collection.aggregate(pipeline)
-#     suggestions = [doc["completion"]
-#                    for doc in cursor if doc.get("completion")]
-
-#     return jsonify({"suggestions": suggestions})
 
 
 @projects_bp.route("/search", methods=["GET"])

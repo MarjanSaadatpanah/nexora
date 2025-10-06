@@ -35,4 +35,3 @@ const Cards = ({ status, title, acronym, id, eu_contribution, link, project }) =
 }
 
 export default Cards
-

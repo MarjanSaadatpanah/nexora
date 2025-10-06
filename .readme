@@ -11,24 +11,35 @@ backend/
 │   │   ├── __init__.py
 │   │   ├── projects.py
 │   │   └── organizations.py
-│   └── extensions.py           # db = SQLAlchemy()
-├── run.py                      # Entry point
+│   └── middleware/ 
+            ├──clerk.py        
+├── run.py 
+├──.env                   
 └── requirements.txt
 
-frontend/src
-    App
-    ├── HeroSection
-    ├── CategoryBar
-    ├── SearchAndFilter
-    │    ├── SearchBox
-    │    └── FilterPanel (modal or drawer)
-    ├── ProjectList
-    │    ├── ProjectCard (repeated)
-    │    └── PaginationControls
-    ├── FeaturedSections
-    │    ├── TopProjects
-    │    └── TopOrganizations
+frontend/
+    public
+    node_modules
+    src
+    ├── app.jsx
+    ├── main.jsx
+    ├── layout.jsx
+    ├── components
+    │    ├── Cards.jsx
+    │    └── searchAndFilters.jsx
+    │    └── Nav.jsx
+    ├── Pages
+    │    ├── Home.jsx 
+    │    └── ProjectDetails.jsx
+    │    └── SignIn.jsx
+    ├── services
+    │    ├── api.js
+    ├── contexts
+    │    ├── SearchContexts.jsx
+    │    └── ThemeContexts.jsx
     └── ProjectDetail (separate route)
+    .env
+    index.html
 
 - responsive 
 
@@ -92,3 +103,8 @@ source venv/Scripts/activate
 # active,
 
 
+
+
+
+backend new packages for clerk:
+pip install clerk-backend-api

@@ -3,6 +3,7 @@ import { VscRobot, VscLaw, VscWorkspaceTrusted } from "react-icons/vsc";
 import { FaCalendarCheck, FaTag, FaGlobe, FaEuroSign, FaCreditCard, FaLightbulb, FaClock } from "react-icons/fa";
 import { MdEventNote } from "react-icons/md";
 import ObjectiveSummary from './ObjectiveSummary';
+import ActionMenu from './ActionMenu';
 
 const Project = ({ project }) => {
     const [viewDetails, setViewDetails] = useState(false);
@@ -73,8 +74,10 @@ const Project = ({ project }) => {
             <div className="p-6 ">
                 <div className="flex justify-between items-start">
                     <div className="flex-1">
-                        <h1 className="text-2xl text-gray-900 dark:text-gray-300 mb-2">{project.title}</h1>
-
+                        <div className="flex justify-between">
+                            <h1 className="text-2xl text-gray-900 dark:text-gray-300 mb-2">{project.title}</h1>
+                            <ActionMenu id={project.id} />
+                        </div>
                         <div className="flex justify-between mt-7">
                             <div>
                                 <span className="inline-flex items-center px-3 py-1 rounded mr-2 text-xs font-medium bg-blue-100 text-blue-800">
@@ -95,6 +98,7 @@ const Project = ({ project }) => {
                                     </span>
                                 )}
                             </div>
+
                             <span className="text-gray-800 dark:text-gray-300 inline-flex items-center px-3 py-1 rounded-full text-sm">
                                 ID: {project.id}
                             </span>

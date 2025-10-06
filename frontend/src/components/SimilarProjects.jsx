@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import StatusBadge from './project-details/StatusBadge';
 import { BiSolidCategory } from "react-icons/bi";
+import { Link } from 'react-router-dom';
 
 const App = ({ projects }) => {
 
@@ -84,42 +85,45 @@ const App = ({ projects }) => {
                                             aria-hidden={!isActive}
                                         >
 
-                                            <div className="relative flex flex-col ">
-                                                <StatusBadge status={slide.status} />
+                                            <Link to={`/project/${slide.id}`} state={{ slide }} >
+                                                <div className="relative flex flex-col ">
+                                                    <StatusBadge status={slide.status} />
 
-                                                <div className="p-4 lg:px-32">
-                                                    <span className="text-slate-800 dark:text-slate-200 font-semibold">{slide.acronym}</span>
+                                                    <div className="p-4 lg:px-32">
+                                                        <span className="text-slate-800 dark:text-slate-200 font-semibold">{slide.acronym}</span>
 
-                                                    <p className="text-slate-800 dark:text-slate-200 leading-normal font-light line-clamp-4 h-11">
-                                                        {slide.title}
-                                                    </p>
-                                                </div>
+                                                        <p className="text-slate-800 dark:text-slate-200 leading-normal font-light line-clamp-4 h-11">
+                                                            {slide.title}
+                                                        </p>
+                                                    </div>
 
-                                                <div className="lg:flex items-center justify-between p-4 lg:px-32">
-                                                    <div className="lg:w-1/4 flex items-center">
-                                                        <div className="flex flex-col text-sm">
-                                                            {/* <div className="mb-2 text-slate-800 dark:text-slate-200 text-base">
+                                                    <div className="lg:flex items-center justify-between p-4 lg:px-32">
+                                                        <div className="lg:w-1/4 flex items-center">
+                                                            <div className="flex flex-col text-sm">
+                                                                {/* <div className="mb-2 text-slate-800 dark:text-slate-200 text-base">
                                                     EU Contribution: <span className='text-slate-800 dark:text-slate-200 font-semibold'>{slide.eu_contribution?.toLocaleString('en-US', { style: 'currency', currency: 'EUR' })}</span>
                                                 </div> */}
-                                                            <span className="text-slate-600 dark:text-slate-100">
-                                                                ID:  {slide.id}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    {slide.keywords && (
-                                                        <div className="lg:w-3/4 py-3  last:border-b-0">
-                                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Keywords</p>
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {slide.keywords.split(",").map((keyword, index) => (
-                                                                    <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                                                                        {keyword.trim()}
-                                                                    </span>
-                                                                ))}
+                                                                <span className="text-slate-600 dark:text-slate-100">
+                                                                    ID:  {slide.id}
+                                                                </span>
                                                             </div>
                                                         </div>
-                                                    )}
+                                                        {slide.keywords && (
+                                                            <div className="lg:w-3/4 py-3  last:border-b-0">
+                                                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Keywords</p>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {slide.keywords.split(",").map((keyword, index) => (
+                                                                        <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                                                            {keyword.trim()}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            </Link>
+
                                         </div>
                                     );
                                 })}
