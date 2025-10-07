@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
@@ -11,6 +10,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import { useAuth } from '@clerk/clerk-react';
 import { useFavorites } from '../../hooks/useFavorites';
+import AlertComp from '../AlertComp';
 
 const ITEM_HEIGHT = 48;
 
@@ -23,6 +23,8 @@ export default function ActionMenu({ id }) {
     const { isSignedIn } = useAuth();
     const { isFavorite, toggleFavorite } = useFavorites();
 
+    const [alertInfo, setAlertInfo] = useState({ open: false, message: '', severity: 'success' });
+
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
     };
@@ -33,7 +35,7 @@ export default function ActionMenu({ id }) {
 
     const handleFavorite = async () => {
         if (!isSignedIn) {
-            alert('Please sign in to add favorites');
+            setAlertInfo({ open: true, message: 'Please sign in to add favorites', severity: 'warning' });
             handleClose();
             return;
         }
@@ -42,10 +44,10 @@ export default function ActionMenu({ id }) {
         try {
             await toggleFavorite(id);
             const message = isFavorite(id) ? 'Removed from favorites!' : 'Added to favorites!';
-            alert(message);
+            setAlertInfo({ open: true, message: message });
         } catch (error) {
             console.error('Failed to update favorite:', error);
-            alert('Failed to update favorites. Please try again.');
+            setAlertInfo({ open: true, message: 'Failed to update favorites. Please try again.', severity: 'warning' });
         } finally {
             setActionLoading(false);
             handleClose();
@@ -68,6 +70,7 @@ export default function ActionMenu({ id }) {
 
     return (
         <div>
+            <AlertComp alertInfo={alertInfo} setAlertInfo={setAlertInfo} />
             <IconButton
                 aria-label="more"
                 id="long-button"

@@ -18,9 +18,7 @@ import spacy
 # Initialize spaCy model
 try:
     nlp = spacy.load("en_core_web_sm")
-    print("✅ spaCy model loaded successfully")
 except OSError:
-    print("❌ spaCy model not found. Please install it with: python -m spacy download en_core_web_sm")
     nlp = None
 
 projects_bp = Blueprint("projects", __name__)
@@ -349,6 +347,9 @@ def get_recent_projects():
         enriched = enrich_project_with_organizations(normalized)
         projects.append(enriched)
 
+    # print(projects_collection.distinct("topics"))
+    # print(f"programme", projects_collection.distinct("frameworkProgramme"))
+
     return jsonify(projects)
 
 
@@ -365,6 +366,20 @@ def get_closed_projects():
         projects.append(enriched)
 
     return jsonify(projects)
+
+
+@projects_bp.route("/all_topics", methods=["GET"])
+def get_all_topics():
+    all_topics = db.projects.distinct("topics")
+    return jsonify(all_topics)
+
+
+@projects_bp.route('/all_topics/search')
+def search_topics():
+    query = request.args.get('q', '')
+    topics = db.projects.distinct("topics")
+    filtered = [p for p in topics if query.lower() in p.lower()]
+    return jsonify(filtered[:1000])  # Limit results
 
 
 @projects_bp.route("/expiring_soon", methods=["GET"])
@@ -522,6 +537,10 @@ def search_projects():
     programme = request.args.get("programme")
     if programme:
         query["frameworkProgramme"] = programme
+
+    topics = request.args.get("topics")
+    if topics:
+        query["topics"] = topics
 
     # --- Date filters ---
     start_date = request.args.get("start_date")
