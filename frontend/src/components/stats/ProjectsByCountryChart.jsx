@@ -53,7 +53,7 @@ export default function ProjectsByCountryChart() {
     );
 
     return (
-        <div className="bg-white shadow rounded-2xl h-96 w-full max-w-lg mx-auto">
+        <div className="shadow rounded-2xl h-96 w-full max-w-lg mx-auto">
             <h2 className="text-lg  text-center">
                 Top 10 Countries with the most Projects!
             </h2>

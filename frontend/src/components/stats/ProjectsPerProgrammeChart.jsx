@@ -12,14 +12,16 @@ import {
 } from "chart.js";
 import { ClipLoader } from "react-spinners";
 import ChartCache from "../../utils/ChartCache";
+import { useTheme } from '../../contexts/ThemeContext';
 
-// Check if Chart.js is already registered to avoid duplicate registration
 let chartJsRegistered = false;
 
 export default React.memo(function ProjectsPerProgrammeChart() {
     const [chartData, setChartData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const { isDark } = useTheme();
 
     // Register Chart.js components once
     useEffect(() => {
@@ -36,6 +38,10 @@ export default React.memo(function ProjectsPerProgrammeChart() {
             chartJsRegistered = true;
         }
     }, []);
+
+    // Memoized colors - these depend on theme
+    const textColor = useMemo(() => isDark ? '#e5e7eb' : '#1f2937', [isDark]);
+    const gridColor = useMemo(() => isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)', [isDark]);
 
     // Memoized colors
     const backgroundColor = useMemo(() => [
@@ -58,6 +64,11 @@ export default React.memo(function ProjectsPerProgrammeChart() {
                 display: false,
             },
             tooltip: {
+                backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                titleColor: textColor,
+                bodyColor: textColor,
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                borderWidth: 1,
                 callbacks: {
                     label: function (context) {
                         return `${context.raw.toLocaleString()}`;
@@ -69,14 +80,16 @@ export default React.memo(function ProjectsPerProgrammeChart() {
             y: {
                 beginAtZero: true,
                 grid: {
-                    color: "rgba(0, 0, 0, 0.05)",
+                    color: gridColor,
                 },
                 ticks: {
+                    color: textColor,
                     callback: function (value) {
                         return value.toLocaleString();
                     }
                 },
                 title: {
+                    color: textColor,
                     display: true,
                     text: "Number of Projects",
                     font: {
@@ -90,10 +103,12 @@ export default React.memo(function ProjectsPerProgrammeChart() {
                     display: false,
                 },
                 ticks: {
+                    color: textColor,
                     maxRotation: 45,
                     minRotation: 45
                 },
                 title: {
+                    color: textColor,
                     display: true,
                     text: "Master calls",
                     font: {
@@ -109,7 +124,7 @@ export default React.memo(function ProjectsPerProgrammeChart() {
                 categoryPercentage: 0.8,
             }
         }
-    }), []);
+    }), [isDark, textColor, gridColor]);
 
     const fetchData = useCallback(async () => {
         const cacheKey = 'projects_per_programme';
@@ -191,8 +206,8 @@ export default React.memo(function ProjectsPerProgrammeChart() {
     );
 
     return (
-        <div className="bg-white p-6 w-full max-w-6xl mx-auto mt-32">
-            <h2 className="text-xl text-center mb-2 text-gray-800">
+        <div className="p-6 w-full max-w-6xl mx-auto mt-32">
+            <h2 className="text-xl text-center mb-2 text-gray-800 dark:text-gray-200">
                 Projects per Master Call
             </h2>
             <div className="h-96">
@@ -202,7 +217,7 @@ export default React.memo(function ProjectsPerProgrammeChart() {
                     redraw={false}
                 />
             </div>
-            <div className="mt-4 text-sm text-gray-500 text-center">
+            <div className="mt-4 text-sm text-gray-500 dark:text-gray-200 text-center">
                 Data showing the number of projects for top 10 master calls
             </div>
         </div>

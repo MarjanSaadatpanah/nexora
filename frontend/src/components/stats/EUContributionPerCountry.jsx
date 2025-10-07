@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import { getName } from 'country-list';
@@ -12,6 +13,7 @@ import {
     BarElement
 } from "chart.js";
 import { ClipLoader } from "react-spinners";
+import { useTheme } from '../../contexts/ThemeContext';
 
 ChartJS.register(
     Title,
@@ -25,6 +27,7 @@ ChartJS.register(
 
 export default function EUContributionPerCountry() {
     const [chartData, setChartData] = useState(null);
+    const { isDark } = useTheme();
 
     useEffect(() => {
         fetch("http://localhost:5000/api/stats/eu_contribution_per_country")
@@ -36,31 +39,31 @@ export default function EUContributionPerCountry() {
                         {
                             data: data.map((item) => item.total_eu_contribution),
                             backgroundColor: [
-                                "#6DAEDB", // Medium blue
-                                "#77DD77", // Medium green
-                                "#FFB347", // Peach-orange
-                                "#B19CD9", // Lavender
-                                "#FF6961", // Coral
-                                "#AEC6CF", // Light blue
-                                "#FDFD96", // Light yellow
-                                "#84B082", // Sage green
-                                "#F49AC2", // Pink
-                                "#CB99C9", // Mauve
+                                "#6DAEDB",
+                                "#77DD77",
+                                "#FFB347",
+                                "#B19CD9",
+                                "#FF6961",
+                                "#AEC6CF",
+                                "#FDFD96",
+                                "#84B082",
+                                "#F49AC2",
+                                "#CB99C9",
                             ],
                             borderColor: "rgba(255, 255, 255, 0.8)",
                             borderWidth: 1,
                             borderRadius: 6,
                             hoverBackgroundColor: [
-                                "#5A9BC8", // Darker blue
-                                "#66CC66", // Darker green
-                                "#F0A040", // Darker peach-orange
-                                "#9E8AC9", // Darker lavender
-                                "#F05959", // Darker coral
-                                "#9BB5C4", // Darker light blue
-                                "#F5F586", // Darker light yellow
-                                "#739E71", // Darker sage green
-                                "#E48AB0", // Darker pink
-                                "#BA88B8", // Darker mauve
+                                "#5A9BC8",
+                                "#66CC66",
+                                "#F0A040",
+                                "#9E8AC9",
+                                "#F05959",
+                                "#9BB5C4",
+                                "#F5F586",
+                                "#739E71",
+                                "#E48AB0",
+                                "#BA88B8",
                             ],
                         },
                     ],
@@ -74,8 +77,12 @@ export default function EUContributionPerCountry() {
         </div>
     );
 
+    // Define colors based on theme
+    const textColor = isDark ? '#e5e7eb' : '#1f2937';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
     return (
-        <div className="bg-white p-6 w-full max-w-6xl mx-auto">
+        <div className="p-6 w-full max-w-6xl mx-auto">
             <div className="h-96">
                 <Bar
                     data={chartData}
@@ -88,6 +95,11 @@ export default function EUContributionPerCountry() {
                                 display: false,
                             },
                             tooltip: {
+                                backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                                titleColor: textColor,
+                                bodyColor: textColor,
+                                borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                                borderWidth: 1,
                                 callbacks: {
                                     label: function (context) {
                                         return `€${context.raw.toLocaleString()}`;
@@ -99,9 +111,10 @@ export default function EUContributionPerCountry() {
                             y: {
                                 beginAtZero: true,
                                 grid: {
-                                    color: "rgba(0, 0, 0, 0.05)",
+                                    color: gridColor,
                                 },
                                 ticks: {
+                                    color: textColor,
                                     callback: function (value) {
                                         return '€' + value.toLocaleString();
                                     }
@@ -109,6 +122,7 @@ export default function EUContributionPerCountry() {
                                 title: {
                                     display: true,
                                     text: "Contribution Amount (€)",
+                                    color: textColor,
                                     font: {
                                         weight: "bold",
                                         size: 12
@@ -120,12 +134,14 @@ export default function EUContributionPerCountry() {
                                     display: false,
                                 },
                                 ticks: {
+                                    color: textColor,
                                     maxRotation: 45,
                                     minRotation: 45
                                 },
                                 title: {
                                     display: true,
                                     text: "Data showing the contribution amounts from EU countries",
+                                    color: textColor,
                                     font: {
                                         weight: "bold",
                                         size: 12
@@ -135,16 +151,12 @@ export default function EUContributionPerCountry() {
                         },
                         elements: {
                             bar: {
-                                // This makes the bars thicker
                                 barPercentage: 0.7,
                                 categoryPercentage: 0.8,
                             }
                         }
                     }}
                 />
-            </div>
-            <div className="mt-4 text-sm text-gray-500 text-center">
-
             </div>
         </div>
     );

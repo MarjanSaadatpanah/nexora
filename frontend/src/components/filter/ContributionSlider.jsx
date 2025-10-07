@@ -56,8 +56,8 @@ const ContributionSlider = ({ min, max, value, onChange, title, type = "contribu
     return (
         <div className="my-10">
             <Box sx={{ width: "97%", px: 1 }}>
-                <Typography variant="body2" className="text-gray-600">
-                    <label className="block text-xs text-gray-500">
+                <Typography variant="body2" className="text-gray-600 dark:text-gray-200">
+                    <label className="block text-xs text-gray-500 dark:text-gray-200">
                         {title}: {formatCurrency(value[0])} – {formatCurrency(value[1])}
                     </label>
                 </Typography>

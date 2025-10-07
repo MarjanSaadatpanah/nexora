@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Bar } from "react-chartjs-2";
 import {
@@ -12,6 +13,7 @@ import {
 } from "chart.js";
 import { ClipLoader } from "react-spinners";
 import ChartCache from "../../utils/ChartCache";
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Check if Chart.js is already registered to avoid duplicate registration
 let chartJsRegistered = false;
@@ -21,6 +23,8 @@ export default React.memo(function ProjectsByEuContribution() {
     const [rawData, setRawData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const { isDark } = useTheme();
 
     // Register Chart.js components once
     useEffect(() => {
@@ -37,6 +41,10 @@ export default React.memo(function ProjectsByEuContribution() {
             chartJsRegistered = true;
         }
     }, []);
+
+    // Memoized colors - these depend on theme
+    const textColor = useMemo(() => isDark ? '#e5e7eb' : '#1f2937', [isDark]);
+    const gridColor = useMemo(() => isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)', [isDark]);
 
     // Memoized colors
     const backgroundColor = useMemo(() => [
@@ -59,10 +67,10 @@ export default React.memo(function ProjectsByEuContribution() {
                 display: false,
             },
             tooltip: {
-                backgroundColor: "rgba(255, 255, 255, 0.95)",
-                titleColor: "#333",
-                bodyColor: "#555",
-                borderColor: "#ddd",
+                backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                titleColor: textColor,
+                bodyColor: textColor,
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
                 borderWidth: 1,
                 callbacks: {
                     title: function (tooltipItems) {
@@ -84,14 +92,16 @@ export default React.memo(function ProjectsByEuContribution() {
             y: {
                 beginAtZero: true,
                 grid: {
-                    color: "rgba(0, 0, 0, 0.05)",
+                    color: gridColor,
                 },
                 ticks: {
+                    color: textColor,
                     callback: function (value) {
                         return `€${value.toLocaleString()}`;
                     }
                 },
                 title: {
+                    color: textColor,
                     display: true,
                     text: "Contribution Amount (€)",
                     font: {
@@ -105,10 +115,12 @@ export default React.memo(function ProjectsByEuContribution() {
                     display: false,
                 },
                 ticks: {
+                    color: textColor,
                     maxRotation: 45,
                     minRotation: 45
                 },
                 title: {
+                    color: textColor,
                     display: true,
                     text: "Projects with acronym",
                     font: {
@@ -124,7 +136,7 @@ export default React.memo(function ProjectsByEuContribution() {
                 categoryPercentage: 0.8,
             }
         }
-    }), [rawData]);
+    }), [isDark, textColor, gridColor, rawData]);
 
     const fetchData = useCallback(async () => {
         const cacheKey = 'top_projects_by_eu_contribution';
@@ -205,8 +217,8 @@ export default React.memo(function ProjectsByEuContribution() {
     );
 
     return (
-        <div className="bg-white p-6 w-full mt-32 max-w-6xl mx-auto">
-            <h2 className="text-xl text-center mb-2 text-gray-800">
+        <div className=" p-6 w-full mt-32 max-w-6xl mx-auto">
+            <h2 className="text-xl text-center mb-2 text-gray-800 dark:text-gray-200">
                 Top 15 Projects with high EU Contribution
             </h2>
             <div className="h-96 w-full">
@@ -216,7 +228,7 @@ export default React.memo(function ProjectsByEuContribution() {
                     redraw={false}
                 />
             </div>
-            <div className="mt-4 text-sm text-gray-500 text-center">
+            <div className="mt-4 text-sm text-gray-500 dark:text-gray-200 text-center">
                 Data showing the contribution amounts for each project
             </div>
         </div>
