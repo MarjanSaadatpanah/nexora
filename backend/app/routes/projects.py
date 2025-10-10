@@ -534,6 +534,14 @@ def search_projects():
     if status:
         query["status"] = status
 
+    acronym = request.args.get("acronym")
+    if acronym:
+        query["acronym"] = acronym
+
+    title = request.args.get("title")
+    if title:
+        query["title"] = title
+
     programme = request.args.get("programme")
     if programme:
         query["frameworkProgramme"] = programme

@@ -78,8 +78,6 @@ const ProjectDetails = () => {
     if (error) return <p>{error}</p>;
     if (!project) return <p>No project found</p>;
 
-
-    // Filter organizations for each specific role with more flexible matching
     const participants = project.organizations?.filter(org =>
         isRoleMatch(org.role, ['participant', 'participants'])
     );
@@ -104,11 +102,9 @@ const ProjectDetails = () => {
         ])
     );
 
-    // Find the coordinator from the organizations array
-    const coordinator = project.coordinator;
+    const coordinator = project.coordinator ? [project.coordinator] : [];
 
-
-    // console.log(project.objective_data.summary)
+    // console.log(project)
 
     return (
         <>
@@ -128,68 +124,22 @@ const ProjectDetails = () => {
 
                         {/* coordinator (conditionally rendered) */}
                         {coordinator && (
-                            <div className="pb-2 mb-3 mt-20">
-                                <div className="flex text-lg text-gray-700 dark:text-gray-200">
-                                    <FaCrown className='mt-1 mr-3' />
-                                    <h3>Coordinated by:</h3>
-                                </div>
-
-                                <Organization organization={coordinator} />
-                            </div>
+                            <Organization organizations={coordinator} title="Coordinated by" icon={FaCrown} />
                         )}
 
                         {/* Participant(s): (conditionally rendered) */}
                         {participants && participants.length > 0 && (
-                            <div className="pb-2 mb-3 mt-20 ">
-                                <div className="flex text-lg text-gray-700 dark:text-gray-200">
-                                    <FaHandshake className='mt-1 mr-3' />
-                                    <h3>Participant(s):</h3>
-                                </div>
-
-                                <ul className="grid w-full gap-2 grid-cols-1">
-                                    {participants.map((participant, index) => (
-                                        <li key={participant.id || index}>
-                                            <Organization organization={participant} />
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <Organization organizations={participants} title="Participant(s)" icon={FaHandshake} />
                         )}
 
                         {/* thirdParty(s): (conditionally rendered) */}
                         {thirdParties && thirdParties.length > 0 && (
-                            <div className="pb-2 mb-3 mt-20">
-                                <div className="flex text-lg text-gray-700">
-                                    <FaGlobe className='mt-1 mr-3' />
-                                    <h3>Third Party(s):</h3>
-                                </div>
-
-                                <ul className="grid w-full gap-2 grid-cols-1">
-                                    {thirdParties.map((thirdParty, index) => (
-                                        <li key={thirdParty.id || index}>
-                                            <Organization organization={thirdParty} />
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <Organization organizations={thirdParties} title="Third Party(s)" icon={FaGlobe} />
                         )}
 
                         {/* associatedPartner(s): (conditionally rendered) */}
                         {associatedPartners && associatedPartners.length > 0 && (
-                            <div className="pb-2 mb-3 mt-20">
-                                <div className="flex text-lg text-gray-700">
-                                    <BsPeopleFill className='mt-1 mr-3' />
-                                    <h3>Partner(s):</h3>
-                                </div>
-
-                                <ul className="grid w-full gap-2 grid-cols-1">
-                                    {associatedPartners.map((associatedPartner, index) => (
-                                        <li key={associatedPartner.id || index}>
-                                            <Organization organization={associatedPartner} />
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <Organization organizations={associatedPartners} title="Partner(s)" icon={BsPeopleFill} />
                         )}
 
                         <div className='mt-40'>
