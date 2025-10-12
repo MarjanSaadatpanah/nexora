@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { getName, getCodes } from "country-list";
 import Select from "react-select";
 import ContributionSlider from './filter/ContributionSlider';
+import TopicsSelector from './filter/TopicsSelector'
 import { IoMdClose } from "react-icons/io";
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -15,7 +16,7 @@ const EU_COUNTRIES = [
 
 const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) => {
     const [filters, setFilters] = useState({
-        programme: "",
+        topics: "",
         status: "",
         startDate: "",
         endDate: "",
@@ -25,14 +26,15 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
         minTotalCost: 0,
         maxTotalCost: 0,
     });
-
+    const [selectedTopics, setSelectedTopics] = useState([]);
     const { isDark } = useTheme();
 
     // Initialize with current filters or defaults
     useEffect(() => {
         if (currentFilters) {
+            const topics = currentFilters.topics ? currentFilters.topics.split(",") : [];
             setFilters({
-                programme: currentFilters.programme || "",
+                topics: currentFilters.topics || "",
                 status: currentFilters.status || "",
                 startDate: currentFilters.start_date || "",
                 endDate: currentFilters.end_date || "",
@@ -44,8 +46,21 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                 minTotalCost: currentFilters.min_total_cost || 0,
                 maxTotalCost: currentFilters.max_total_cost || 1000000000,
             });
+            setSelectedTopics(topics);
         }
     }, [currentFilters, filterVisible]);
+
+    // Update filters when selectedTopics changes
+    useEffect(() => {
+        setFilters(prev => ({
+            ...prev,
+            topics: selectedTopics.join(',')
+        }));
+    }, [selectedTopics]);
+
+    const handleTopicsChange = (newTopicss) => {
+        setSelectedTopics(newTopicss);
+    };
 
     // Create country options with EU Countries as first option
     const countryOptions = [
@@ -120,7 +135,7 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
 
     const handleFiltering = () => {
         onApply({
-            programme: filters.programme,
+            topics: filters.topics,
             status: filters.status,
             min_contribution: filters.minContribution,
             max_contribution: filters.maxContribution,
@@ -134,7 +149,7 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
 
     const handleResetFiltering = () => {
         setFilters({
-            programme: "",
+            topics: "",
             status: "",
             startDate: "",
             endDate: "",
@@ -144,6 +159,7 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
             minTotalCost: 0,
             maxTotalCost: 1000000000,
         });
+        setSelectedTopics([]);
         onApply({});
     };
 
@@ -185,6 +201,12 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                                 <option value="TERMINATED">TERMINATED</option>
                             </select>
                         </div>
+
+                        <TopicsSelector
+                            selectedTopics={selectedTopics}
+                            onTopicsChange={handleTopicsChange}
+                            placeholder="Type to search topics..."
+                        />
 
                         {/* Countries */}
                         <div className="mb-4">

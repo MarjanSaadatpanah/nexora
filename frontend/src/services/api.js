@@ -51,6 +51,11 @@ export async function AllProjects() {
     return data;
 }
 
+export async function AllTopics() {
+    const { data } = await client.get('projects/all_topics');
+    return data;
+}
+
 export async function RecentProjects() {
     const { data } = await client.get('projects/recent');
     return data;
