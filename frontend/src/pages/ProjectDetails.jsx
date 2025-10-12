@@ -3,7 +3,9 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { GetProjectById } from '../services/api';
+import { addToHistory } from '../services/userApi';
 import { SearchContext } from '../contexts/SearchContext';
+import { useAuth } from '@clerk/clerk-react';
 
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { FaCrown, FaHandshake, FaGlobe } from "react-icons/fa6";
@@ -15,6 +17,7 @@ import SimilarProjects from '../components/SimilarProjects';
 
 const ProjectDetails = () => {
     const { isLoading, setIsLoading } = useContext(SearchContext);
+    const { getToken, isSignedIn } = useAuth();
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
@@ -26,7 +29,6 @@ const ProjectDetails = () => {
         if (location.state?.project) {
             setProject(location.state.project);
             setSimilarProjects(location.state.similars);
-
             setIsLoading(false);
         } else {
             const fetchProject = async () => {
@@ -44,6 +46,24 @@ const ProjectDetails = () => {
             fetchProject();
         }
     }, [id, location.state, setIsLoading]);
+
+    // Track project view in history (only for signed-in users)
+    useEffect(() => {
+        const trackHistory = async () => {
+            if (isSignedIn && id) {
+                try {
+                    await addToHistory(getToken, id);
+                    console.log('Project view tracked in history');
+                } catch (error) {
+                    console.error('Failed to track history:', error);
+                    // Silently fail - don't disrupt user experience
+                }
+            }
+        };
+
+        trackHistory();
+    }, [id, isSignedIn, getToken]);
+
     const similarProjectsList = similarProjects.filter(
         (similarProject) => similarProject.id !== project.id
     );
@@ -104,8 +124,6 @@ const ProjectDetails = () => {
 
     const coordinator = project.coordinator ? [project.coordinator] : [];
 
-    // console.log(project)
-
     return (
         <>
             <Suspense fullback={<h1>Loading project details...</h1>}>
@@ -120,7 +138,6 @@ const ProjectDetails = () => {
                     <div className='lg:pl-24 min-h-screen'>
                         {/* project information */}
                         <Project project={project} />
-
 
                         {/* coordinator (conditionally rendered) */}
                         {coordinator && (

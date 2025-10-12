@@ -99,3 +99,45 @@ export const updatePreferences = async (getToken, preferences) => {
     const { data } = await userClient.put('/preferences', { preferences }, { headers });
     return data;
 };
+
+/**
+ * Delete all favorites
+ * @param {Function} getToken - Clerk's getToken function from useAuth()
+ */
+export const deleteAllFavorites = async (getToken) => {
+    const headers = await getAuthHeaders(getToken);
+    const { data } = await userClient.delete('/favorites', { headers });
+    return data;
+};
+
+/**
+ * Reorder favorites
+ * @param {Function} getToken - Clerk's getToken function from useAuth()
+ * @param {Array} favorites - New order array of project IDs
+ */
+export const reorderFavorites = async (getToken, favorites) => {
+    const headers = await getAuthHeaders(getToken);
+    const { data } = await userClient.put('/favorites/reorder', { favorites }, { headers });
+    return data;
+};
+
+/**
+ * Delete all history
+ * @param {Function} getToken - Clerk's getToken function from useAuth()
+ */
+export const deleteAllHistory = async (getToken) => {
+    const headers = await getAuthHeaders(getToken);
+    const { data } = await userClient.delete('/history', { headers });
+    return data;
+};
+
+/**
+ * Delete a specific project from history
+ * @param {Function} getToken - Clerk's getToken function from useAuth()
+ * @param {string} projectId - Project ID to remove from history
+ */
+export const deleteHistoryItem = async (getToken, projectId) => {
+    const headers = await getAuthHeaders(getToken);
+    const { data } = await userClient.delete(`/history/${projectId}`, { headers });
+    return data;
+};

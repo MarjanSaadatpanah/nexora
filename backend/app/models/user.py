@@ -120,3 +120,54 @@ class UserModel:
         """Get user preferences"""
         user = self.get_user(clerk_user_id)
         return user.get("preferences", {}) if user else {}
+
+    def delete_all_favorites(self, clerk_user_id):
+        """Delete all favorites for a user"""
+        return self.collection.update_one(
+            {"clerkUserId": clerk_user_id},
+            {
+                "$set": {
+                    "favorites": [],
+                    "updatedAt": datetime.utcnow()
+                }
+            }
+        )
+
+    def delete_all_history(self, clerk_user_id):
+        """Delete all history for a user"""
+        return self.collection.update_one(
+            {"clerkUserId": clerk_user_id},
+            {
+                "$set": {
+                    "history": [],
+                    "updatedAt": datetime.utcnow()
+                }
+            }
+        )
+
+    def delete_history_item(self, clerk_user_id, project_id):
+        """Delete a specific project from history"""
+        return self.collection.update_one(
+            {"clerkUserId": clerk_user_id},
+            {
+                "$pull": {
+                    "history": {"projectId": project_id}
+                },
+                "$set": {"updatedAt": datetime.utcnow()}
+            }
+        )
+
+    def reorder_favorites(self, clerk_user_id, new_order):
+        """
+        Reorder favorites with a new array order.
+        new_order should be a list of project IDs in the desired order.
+        """
+        return self.collection.update_one(
+            {"clerkUserId": clerk_user_id},
+            {
+                "$set": {
+                    "favorites": new_order,
+                    "updatedAt": datetime.utcnow()
+                }
+            }
+        )

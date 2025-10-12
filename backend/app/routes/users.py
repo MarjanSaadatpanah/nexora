@@ -141,3 +141,71 @@ def update_preferences():
         }), 200
     else:
         return jsonify({"error": "Failed to update preferences"}), 500
+
+
+@users_bp.route('/favorites', methods=['DELETE'])
+@require_auth
+def delete_all_favorites():
+    """Delete all favorites"""
+    user_model = UserModel()
+    result = user_model.delete_all_favorites(g.clerk_user_id)
+
+    if result.modified_count > 0 or result.matched_count > 0:
+        return jsonify({"message": "All favorites deleted"}), 200
+    else:
+        return jsonify({"error": "Failed to delete favorites"}), 500
+
+
+@users_bp.route('/favorites/reorder', methods=['PUT'])
+@require_auth
+def reorder_favorites():
+    """Reorder favorites with new array order"""
+    data = request.get_json()
+
+    if not data or 'favorites' not in data:
+        return jsonify({"error": "Missing 'favorites' array in request body"}), 400
+
+    new_order = data['favorites']
+
+    if not isinstance(new_order, list):
+        return jsonify({"error": "Favorites must be an array"}), 400
+
+    user_model = UserModel()
+    result = user_model.reorder_favorites(g.clerk_user_id, new_order)
+
+    if result.modified_count > 0 or result.matched_count > 0:
+        return jsonify({
+            "message": "Favorites reordered successfully",
+            "favorites": new_order
+        }), 200
+    else:
+        return jsonify({"error": "Failed to reorder favorites"}), 500
+
+
+@users_bp.route('/history', methods=['DELETE'])
+@require_auth
+def delete_all_history():
+    """Delete all history"""
+    user_model = UserModel()
+    result = user_model.delete_all_history(g.clerk_user_id)
+
+    if result.modified_count > 0 or result.matched_count > 0:
+        return jsonify({"message": "All history deleted"}), 200
+    else:
+        return jsonify({"error": "Failed to delete history"}), 500
+
+
+@users_bp.route('/history/<project_id>', methods=['DELETE'])
+@require_auth
+def delete_history_item(project_id):
+    """Delete a specific project from history"""
+    user_model = UserModel()
+    result = user_model.delete_history_item(g.clerk_user_id, project_id)
+
+    if result.modified_count > 0 or result.matched_count > 0:
+        return jsonify({
+            "message": "Project removed from history",
+            "projectId": project_id
+        }), 200
+    else:
+        return jsonify({"error": "Failed to remove from history"}), 500
