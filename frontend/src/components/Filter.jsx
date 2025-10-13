@@ -18,6 +18,8 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
     const [filters, setFilters] = useState({
         topics: "",
         status: "",
+        acronym: "",
+        title: "",
         startDate: "",
         endDate: "",
         selectedCountries: [],
@@ -36,6 +38,8 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
             setFilters({
                 topics: currentFilters.topics || "",
                 status: currentFilters.status || "",
+                acronym: currentFilters.acronym || "",
+                title: currentFilters.title || "",
                 startDate: currentFilters.start_date || "",
                 endDate: currentFilters.end_date || "",
                 selectedCountries: currentFilters.countries
@@ -137,6 +141,8 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
         onApply({
             topics: filters.topics,
             status: filters.status,
+            acronym: filters.acronym,
+            title: filters.title,
             min_contribution: filters.minContribution,
             max_contribution: filters.maxContribution,
             min_total_cost: filters.minTotalCost,
@@ -151,6 +157,8 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
         setFilters({
             topics: "",
             status: "",
+            acronym: "",
+            title: "",
             startDate: "",
             endDate: "",
             selectedCountries: [],
@@ -185,6 +193,26 @@ const Filter = ({ setFilterVisible, filterVisible, onApply, currentFilters }) =>
                             >
                                 <IoMdClose size={20} />
                             </button>
+                        </div>
+
+                        {/* acronym */}
+                        <div className="mb-4">
+                            <label className="block text-xs text-gray-500 dark:text-gray-200 mb-1">Acronym</label>
+                            <input
+                                value={filters.acronym}
+                                onChange={(e) => setFilters({ ...filters, acronym: e.target.value })}
+                                className="w-full px-3 py-2 border bg-white dark:bg-black text-gray-800 dark:text-gray-200  border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        {/* Title */}
+                        <div className="mb-4">
+                            <label className="block text-xs text-gray-500 dark:text-gray-200 mb-1">Title</label>
+                            <input
+                                value={filters.title}
+                                onChange={(e) => setFilters({ ...filters, title: e.target.value })}
+                                className="w-full px-3 py-2 border bg-white dark:bg-black text-gray-800 dark:text-gray-200  border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
                         </div>
 
                         {/* Status */}

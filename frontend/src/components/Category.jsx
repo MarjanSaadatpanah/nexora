@@ -7,6 +7,7 @@ import CorporateFareIcon from '@mui/icons-material/CorporateFare';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import HourglassDisabledIcon from '@mui/icons-material/HourglassDisabled';
+import HistoryIcon from '@mui/icons-material/History';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 import LoginIcon from '@mui/icons-material/Login';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -74,6 +75,7 @@ export default function Category() {
                         <MenuButton link="/expiring" title="Expiring Projects" icon={HourglassDisabledIcon} />
                         <MenuButton link="/closed" title="Closed Projects" icon={EventBusyIcon} />
                         {isSignedIn && <MenuButton link="/favorite-projects" title="Favorite Projects" icon={FavoriteIcon} />}
+                        {isSignedIn && <MenuButton link="/histoyr-projects" title="History" icon={HistoryIcon} />}
                     </div>
 
                     <button

@@ -41,16 +41,6 @@ frontend/
     .env
     index.html
 
-- responsive 
-
-<<<<<<< HEAD
-(pymongo dnspython), dotenv
-
-=======
-
-https://data.europa.eu/data/datasets/cordisrefproj?format=csv
->>>>>>> mongodb
-
 
 python -m venv venv
 source venv/Scripts/activate
@@ -110,6 +100,103 @@ source venv/Scripts/activate
 
 
 
+# Deployment Guide
 
-backend new packages for clerk:
-pip install clerk-backend-api
+## Architecture
+
+- **Backend**: Flask (Python) on port 5000
+- **Frontend**: React (Vite) with Nginx on port 80
+- **Database**: MongoDB Atlas (Cloud)
+- **Authentication**: Clerk (Cloud)
+
+## Prerequisites
+
+- Docker and Docker Compose installed
+- Environment variables configured
+
+## Environment Variables
+
+### Backend (`backend/.env`)
+```bash
+CLERK_PUBLISHABLE_KEY=pk_test_xxx
+CLERK_SECRET_KEY=sk_test_xxx
+CLERK_FRONTEND_API=https://xxx.clerk.accounts.dev
+MONGOURL=mongodb+srv://user:pass@cluster.mongodb.net/db
+```
+
+### Frontend (`frontend/.env`)
+```bash
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_xxx
+VITE_API_BASE_URL=https://your-backend-domain.com/api
+```
+
+## Local Development with Docker
+
+1. **Copy environment files:**
+   ```bash
+   cp backend/.env.example backend/.env
+   cp frontend/.env.example frontend/.env
+   ```
+
+2. **Edit `.env` files with your credentials**
+
+3. **Build and run:**
+   ```bash
+   docker-compose up --build
+   ```
+
+4. **Access:**
+   - Frontend: http://localhost
+   - Backend API: http://localhost:5000/api
+
+## Production Deployment
+
+### Option 1: Docker Compose
+```bash
+docker-compose -f docker-compose.yml up -d
+```
+
+### Option 2: Separate Containers
+
+**Backend:**
+```bash
+cd backend
+docker build -t backend:latest .
+docker run -p 5000:5000 --env-file .env backend:latest
+```
+
+**Frontend:**
+```bash
+cd frontend
+docker build -t frontend:latest .
+docker run -p 80:80 frontend:latest
+```
+
+### Option 3: Kubernetes/Cloud
+Dockerfiles are ready for any container orchestration platform.
+
+
+## Health Checks
+
+- Backend: `GET http://backend:5000/api/projects`
+- Frontend: `GET http://frontend/`
+
+## Troubleshooting
+
+### Backend won't start
+- Check MongoDB connection string
+- Verify Clerk credentials
+- Check logs: `docker logs <container-id>`
+
+### Frontend can't reach backend
+- Verify `VITE_API_BASE_URL` is correct
+- Check CORS configuration
+- Ensure backend is running
+
+### Build fails
+- Check Node.js version (needs 18+)
+- Check Python version (needs 3.11+)
+- Clear Docker cache: `docker system prune -a`
+
+## Support
+Contact development team for issues.

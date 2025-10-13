@@ -11,6 +11,7 @@ import ExpiringProjects from './pages/ExpiringProjects'
 import ClosedProjects from './pages/ClosedProjects'
 import SignInPage from './pages/SignIn'
 import FavoriteProjects from './components/FavoriteProjects'
+import HistoryPage from './components/user/History'
 
 // Clerk publishable key
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
@@ -34,6 +35,7 @@ function App() {
               <Route path="expiring" element={<ExpiringProjects />} />
               <Route path="closed" element={<ClosedProjects />} />
               <Route path="favorite-projects" element={<FavoriteProjects />} />
+              <Route path="histoyr-projects" element={<HistoryPage />} />
               <Route path="sign-in" element={<SignInPage />} />
             </Route>
           </Routes>

@@ -74,15 +74,16 @@ const Project = ({ project }) => {
             <div className="p-6 ">
                 <div className="flex justify-between items-start">
                     <div className="flex-1">
+                        <span className="inline-flex items-center px-3 py-1 rounded mr-2 text-sm font-medium bg-blue-100 text-blue-800">
+                            {project.acronym}
+                        </span>
                         <div className="flex justify-between">
                             <h1 className="text-2xl text-gray-900 dark:text-gray-300 mb-2">{project.title}</h1>
                             <ActionMenu id={project.id} />
                         </div>
                         <div className="flex justify-between mt-7">
                             <div>
-                                <span className="inline-flex items-center px-3 py-1 rounded mr-2 text-xs font-medium bg-blue-100 text-blue-800">
-                                    {project.acronym}
-                                </span>
+
                                 <span className={`inline-flex items-center px-3 py-1 rounded mr-2 text-xs font-medium ${getStatusColor(project.status)}`}>
                                     {project.status}
                                 </span>
